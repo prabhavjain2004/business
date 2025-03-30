@@ -364,9 +364,17 @@ def nfc_api(request):
             elif action == 'top_up':
                 amount = data.get('amount', 0)
                 
-                # Add amount to card balance
-                card.balance += float(amount)
+                # Retrieve current balance
+                current_balance = float(card.balance)
+                # Calculate new balance
+                new_balance = current_balance + float(amount)
+                
+                # Update card balance
+                card.balance = new_balance
                 card.save()
+                
+                # Log the updated balance
+                print(f"Updated balance for card {card.card_id}: {current_balance} + {amount} = {new_balance}")
                 
                 action_description = f"Top-up of {amount} added to card"
             
