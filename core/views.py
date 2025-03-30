@@ -305,11 +305,40 @@ def nfc_api(request):
                 defaults={'name': f'Card {card_id[:8]}...'}
             )
             
+            # Handle specific actions
+            if action == 'issue_card':
+                customer_name = data.get('customer_name', '')
+                mobile_number = data.get('mobile_number', '')
+                initial_balance = data.get('initial_balance', 0)
+                
+                # Update card with customer info and balance
+                card.customer_name = customer_name
+                card.mobile_number = mobile_number
+                card.balance = initial_balance
+                card.save()
+                
+                action_description = f"Card issued to {customer_name} with initial balance {initial_balance}"
+            
+            elif action == 'top_up':
+                amount = data.get('amount', 0)
+                
+                # Add amount to card balance
+                card.balance += float(amount)
+                card.save()
+                
+                action_description = f"Top-up of {amount} added to card"
+            
+            elif action == 'balance_inquiry':
+                action_description = f"Balance inquiry: Current balance is {card.balance}"
+            
+            else:
+                action_description = action
+            
             # Create log entry
             log = NFCLog.objects.create(
                 card=card,
                 card_identifier=card_id,
-                action=action,
+                action=action_description,
                 success=True
             )
             
@@ -320,13 +349,19 @@ def nfc_api(request):
                     log.outlet = request.user.outlet
                 log.save()
             
-            return JsonResponse({
+            response_data = {
                 'status': 'success',
                 'card_id': card_id,
                 'action': action,
                 'card_registered': not created,
                 'log_id': str(log.id)
-            })
+            }
+            
+            # Add balance to response for balance inquiry
+            if action == 'balance_inquiry':
+                response_data['balance'] = float(card.balance)
+            
+            return JsonResponse(response_data)
             
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)

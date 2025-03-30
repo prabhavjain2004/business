@@ -14,6 +14,22 @@ print_message() {
     echo -e "${2}${1}${NC}"
 }
 
+# Fix for Windows path issues in Git Bash/MINGW
+# Set explicit HOME directory to avoid path encoding issues
+if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+    print_message "Windows environment detected, setting up Git configuration..." "$YELLOW"
+    # Get current username without special characters
+    WIN_USERNAME=$(whoami | tr -d '\r')
+    # Set HOME environment variable explicitly
+    export HOME="/c/Users/$WIN_USERNAME"
+    # Create .gitconfig if it doesn't exist
+    if [ ! -f "$HOME/.gitconfig" ]; then
+        touch "$HOME/.gitconfig"
+        print_message "Created .gitconfig file in $HOME" "$GREEN"
+    fi
+    print_message "Using HOME directory: $HOME" "$GREEN"
+fi
+
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     print_message "Git is not installed. Please install Git first." "$RED"
@@ -34,7 +50,8 @@ fi
 # Check if the remote repository is already set up
 if ! git remote | grep -q "origin"; then
     print_message "Adding remote repository..." "$YELLOW"
-    git remote add origin https://github.com/prabhavjain2004/business.git
+    # Use GIT_CONFIG_NOSYSTEM=1 to avoid system config issues
+    GIT_CONFIG_NOSYSTEM=1 git remote add origin https://github.com/prabhavjain2004/business.git
     if [ $? -ne 0 ]; then
         print_message "Failed to add remote repository." "$RED"
         exit 1
@@ -42,10 +59,10 @@ if ! git remote | grep -q "origin"; then
     print_message "Remote repository added successfully." "$GREEN"
 else
     # Check if the remote URL is correct
-    REMOTE_URL=$(git remote get-url origin)
+    REMOTE_URL=$(GIT_CONFIG_NOSYSTEM=1 git remote get-url origin 2>/dev/null)
     if [ "$REMOTE_URL" != "https://github.com/prabhavjain2004/business.git" ]; then
         print_message "Updating remote URL..." "$YELLOW"
-        git remote set-url origin https://github.com/prabhavjain2004/business.git
+        GIT_CONFIG_NOSYSTEM=1 git remote set-url origin https://github.com/prabhavjain2004/business.git
         if [ $? -ne 0 ]; then
             print_message "Failed to update remote URL." "$RED"
             exit 1
@@ -64,7 +81,7 @@ fi
 
 # Add all changes
 print_message "Adding all changes..." "$YELLOW"
-git add .
+GIT_CONFIG_NOSYSTEM=1 git add .
 if [ $? -ne 0 ]; then
     print_message "Failed to add changes." "$RED"
     exit 1
@@ -73,7 +90,7 @@ print_message "Changes added successfully." "$GREEN"
 
 # Commit changes
 print_message "Committing changes..." "$YELLOW"
-git commit -m "$commit_message"
+GIT_CONFIG_NOSYSTEM=1 git commit -m "$commit_message"
 if [ $? -ne 0 ]; then
     print_message "Failed to commit changes." "$RED"
     exit 1
@@ -82,10 +99,10 @@ print_message "Changes committed successfully." "$GREEN"
 
 # Push changes
 print_message "Pushing changes to remote repository..." "$YELLOW"
-git push -u origin master
+GIT_CONFIG_NOSYSTEM=1 git push -u origin master
 if [ $? -ne 0 ]; then
     print_message "Failed to push changes. Trying with 'main' branch instead..." "$YELLOW"
-    git push -u origin main
+    GIT_CONFIG_NOSYSTEM=1 git push -u origin main
     if [ $? -ne 0 ]; then
         print_message "Failed to push changes to remote repository." "$RED"
         print_message "You might need to set up authentication or check your branch name." "$YELLOW"

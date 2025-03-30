@@ -7,6 +7,35 @@
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-blue-600 mb-8">Card Management</h1>
         
+        <!-- Mobile-oriented Card Action Buttons -->
+        <div class="grid grid-cols-1 gap-4 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Card Actions</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <button id="issue-card-btn" class="bg-green-600 text-white py-4 px-6 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Issue New Card
+                    </button>
+                    
+                    <button id="top-up-btn" class="bg-blue-600 text-white py-4 px-6 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Top-Up Card
+                    </button>
+                    
+                    <button id="balance-inquiry-btn" class="bg-purple-600 text-white py-4 px-6 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Balance Inquiry
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Cards List -->
             <div class="md:col-span-2">
@@ -148,6 +177,295 @@
         </div>
     </div>
 </div>
+<!-- NFC Support Fallback Message -->
+<div id="nfc-fallback-message" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-yellow-500 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">NFC Not Supported</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-yellow-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-yellow-600 mb-2">Browser NFC Support Required</h3>
+                <p class="text-gray-600 mb-4">Your browser does not support NFC functionality. Please try one of the following:</p>
+                <ul class="text-left text-gray-600 mb-4 pl-6 list-disc">
+                    <li class="mb-2">Use Google Chrome on Android (version 89 or later)</li>
+                    <li class="mb-2">Make sure NFC is enabled on your device</li>
+                    <li class="mb-2">Contact support if you need assistance</li>
+                </ul>
+                <button id="nfc-fallback-close-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Message Modal -->
+<div id="nfc-error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-red-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">NFC Error</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-red-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 id="nfc-error-title" class="text-xl font-semibold text-red-600 mb-2">Error Occurred</h3>
+                <p id="nfc-error-message" class="text-gray-600 mb-4">An error occurred while processing your request.</p>
+                <button id="nfc-error-close-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Issue Card -->
+<div id="issue-card-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-blue-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">Issue New Card</h3>
+        </div>
+        <div class="p-6">
+            <div id="issue-card-step-1" class="issue-card-step">
+                <p class="text-lg text-center mb-4">Please tap an NFC card to begin</p>
+                <div class="flex justify-center mb-4">
+                    <div class="animate-pulse bg-blue-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p id="issue-card-status-1" class="text-center text-gray-600">Waiting for card...</p>
+            </div>
+            
+            <div id="issue-card-step-2" class="issue-card-step hidden">
+                <p class="text-lg text-center mb-4">Card detected! Enter customer details</p>
+                <form id="issue-card-form">
+                    <div class="mb-4">
+                        <label for="customer-name" class="block text-gray-700 mb-2">Customer Name</label>
+                        <input type="text" id="customer-name" name="customer-name" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter customer name" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="mobile-number" class="block text-gray-700 mb-2">Mobile Number</label>
+                        <input type="tel" id="mobile-number" name="mobile-number" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter mobile number" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Loading Amount</label>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                            <span class="font-semibold">Total Amount:</span>
+                            <span id="issue-card-total" class="text-lg font-bold">₹0</span>
+                            <input type="hidden" id="issue-card-amount" name="amount" value="0">
+                        </div>
+                    </div>
+                </form>
+                <div class="flex justify-end mt-4">
+                    <button id="issue-card-next-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Next
+                    </button>
+                </div>
+            </div>
+            
+            <div id="issue-card-step-3" class="issue-card-step hidden">
+                <p class="text-lg text-center mb-4">Please tap the card again to confirm and complete issuance</p>
+                <div class="flex justify-center mb-4">
+                    <div class="animate-pulse bg-green-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <p><strong>Customer:</strong> <span id="confirm-customer-name"></span></p>
+                    <p><strong>Mobile:</strong> <span id="confirm-mobile-number"></span></p>
+                    <p><strong>Amount:</strong> <span id="confirm-amount"></span></p>
+                </div>
+                <p id="issue-card-status-3" class="text-center text-gray-600">Waiting for confirmation...</p>
+            </div>
+            
+            <div id="issue-card-step-4" class="issue-card-step hidden">
+                <div class="text-center">
+                    <div class="flex justify-center mb-4">
+                        <div class="bg-green-100 rounded-full p-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-green-600 mb-2">Card Issued Successfully!</h3>
+                    <p class="text-gray-600 mb-4">The card has been issued and is ready to use.</p>
+                    <button id="issue-card-done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-100 px-6 py-4 flex justify-end">
+            <button id="issue-card-cancel-btn" class="text-gray-700 hover:text-gray-900">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Top-Up -->
+<div id="top-up-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-blue-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">Top-Up Card</h3>
+        </div>
+        <div class="p-6">
+            <div id="top-up-step-1" class="top-up-step">
+                <p class="text-lg text-center mb-4">Please tap an NFC card to begin</p>
+                <div class="flex justify-center mb-4">
+                    <div class="animate-pulse bg-blue-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p id="top-up-status-1" class="text-center text-gray-600">Waiting for card...</p>
+            </div>
+            
+            <div id="top-up-step-2" class="top-up-step hidden">
+                <p class="text-lg text-center mb-4">Card detected! Enter top-up amount</p>
+                <div id="card-info" class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <p><strong>Card ID:</strong> <span id="top-up-card-id"></span></p>
+                    <p><strong>Customer:</strong> <span id="top-up-customer-name">-</span></p>
+                    <p><strong>Current Balance:</strong> <span id="top-up-current-balance">-</span></p>
+                </div>
+                <form id="top-up-form">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Top-Up Amount</label>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
+                            <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                            <span class="font-semibold">Total Amount:</span>
+                            <span id="top-up-total" class="text-lg font-bold">₹0</span>
+                            <input type="hidden" id="top-up-amount" name="amount" value="0">
+                        </div>
+                    </div>
+                </form>
+                <div class="flex justify-end mt-4">
+                    <button id="top-up-next-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Next
+                    </button>
+                </div>
+            </div>
+            
+            <div id="top-up-step-3" class="top-up-step hidden">
+                <p class="text-lg text-center mb-4">Please tap the card again to confirm and complete top-up</p>
+                <div class="flex justify-center mb-4">
+                    <div class="animate-pulse bg-green-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <p><strong>Card ID:</strong> <span id="confirm-top-up-card-id"></span></p>
+                    <p><strong>Top-Up Amount:</strong> <span id="confirm-top-up-amount"></span></p>
+                    <p><strong>New Balance:</strong> <span id="confirm-new-balance"></span></p>
+                </div>
+                <p id="top-up-status-3" class="text-center text-gray-600">Waiting for confirmation...</p>
+            </div>
+            
+            <div id="top-up-step-4" class="top-up-step hidden">
+                <div class="text-center">
+                    <div class="flex justify-center mb-4">
+                        <div class="bg-green-100 rounded-full p-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-green-600 mb-2">Top-Up Successful!</h3>
+                    <p class="text-gray-600 mb-4">The card has been topped up successfully.</p>
+                    <button id="top-up-done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-100 px-6 py-4 flex justify-end">
+            <button id="top-up-cancel-btn" class="text-gray-700 hover:text-gray-900">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Balance Inquiry -->
+<div id="balance-inquiry-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-blue-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">Balance Inquiry</h3>
+        </div>
+        <div class="p-6">
+            <div id="balance-inquiry-step-1" class="balance-inquiry-step">
+                <p class="text-lg text-center mb-4">Please tap an NFC card to check balance</p>
+                <div class="flex justify-center mb-4">
+                    <div class="animate-pulse bg-blue-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p id="balance-inquiry-status" class="text-center text-gray-600">Waiting for card...</p>
+            </div>
+            
+            <div id="balance-inquiry-step-2" class="balance-inquiry-step hidden">
+                <div class="text-center">
+                    <div class="flex justify-center mb-4">
+                        <div class="bg-green-100 rounded-full p-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-green-600 mb-4">Card Balance</h3>
+                    <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                        <p><strong>Card ID:</strong> <span id="balance-card-id"></span></p>
+                        <p><strong>Customer:</strong> <span id="balance-customer-name">-</span></p>
+                        <p class="text-2xl font-bold text-blue-600 mt-2"><span id="balance-amount">-</span></p>
+                    </div>
+                    <button id="balance-inquiry-done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 mt-4">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-100 px-6 py-4 flex justify-end">
+            <button id="balance-inquiry-cancel-btn" class="text-gray-700 hover:text-gray-900">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -161,6 +479,528 @@
                 // Display the message (you could implement a toast notification here)
                 alert(decodeURIComponent(message));
             }
+            
+            // Initialize NFC Card Manager
+            const cardManager = new NFCCardManager('/api/nfc/');
+            
+            // Get fallback and error modal elements
+            const nfcFallbackMessage = document.getElementById('nfc-fallback-message');
+            const nfcErrorModal = document.getElementById('nfc-error-modal');
+            const nfcErrorTitle = document.getElementById('nfc-error-title');
+            const nfcErrorMessage = document.getElementById('nfc-error-message');
+            const nfcFallbackCloseBtn = document.getElementById('nfc-fallback-close-btn');
+            const nfcErrorCloseBtn = document.getElementById('nfc-error-close-btn');
+            
+            // Add event listeners for fallback and error modals
+            nfcFallbackCloseBtn.addEventListener('click', function() {
+                nfcFallbackMessage.classList.add('hidden');
+            });
+            
+            nfcErrorCloseBtn.addEventListener('click', function() {
+                nfcErrorModal.classList.add('hidden');
+            });
+            
+            // Initialize NFC Reader
+            const nfcReader = new NFCReader({
+                onReading: handleNFCReading,
+                onError: handleNFCError,
+                onNotSupported: handleNFCNotSupported
+            });
+            
+            // Current operation state
+            let currentOperation = null;
+            let currentStep = 1;
+            let scannedCardId = null;
+            let currentBalance = 0;
+            
+            // Get modal elements
+            const issueCardModal = document.getElementById('issue-card-modal');
+            const topUpModal = document.getElementById('top-up-modal');
+            const balanceInquiryModal = document.getElementById('balance-inquiry-modal');
+            
+            // Get button elements
+            const issueCardBtn = document.getElementById('issue-card-btn');
+            const topUpBtn = document.getElementById('top-up-btn');
+            const balanceInquiryBtn = document.getElementById('balance-inquiry-btn');
+            
+            // Issue Card Modal Elements
+            const issueCardStep1 = document.getElementById('issue-card-step-1');
+            const issueCardStep2 = document.getElementById('issue-card-step-2');
+            const issueCardStep3 = document.getElementById('issue-card-step-3');
+            const issueCardStep4 = document.getElementById('issue-card-step-4');
+            const issueCardStatus1 = document.getElementById('issue-card-status-1');
+            const issueCardStatus3 = document.getElementById('issue-card-status-3');
+            const issueCardNextBtn = document.getElementById('issue-card-next-btn');
+            const issueCardCancelBtn = document.getElementById('issue-card-cancel-btn');
+            const issueCardDoneBtn = document.getElementById('issue-card-done-btn');
+            const issueCardTotal = document.getElementById('issue-card-total');
+            const issueCardAmount = document.getElementById('issue-card-amount');
+            const confirmCustomerName = document.getElementById('confirm-customer-name');
+            const confirmMobileNumber = document.getElementById('confirm-mobile-number');
+            const confirmAmount = document.getElementById('confirm-amount');
+            
+            // Top-Up Modal Elements
+            const topUpStep1 = document.getElementById('top-up-step-1');
+            const topUpStep2 = document.getElementById('top-up-step-2');
+            const topUpStep3 = document.getElementById('top-up-step-3');
+            const topUpStep4 = document.getElementById('top-up-step-4');
+            const topUpStatus1 = document.getElementById('top-up-status-1');
+            const topUpStatus3 = document.getElementById('top-up-status-3');
+            const topUpNextBtn = document.getElementById('top-up-next-btn');
+            const topUpCancelBtn = document.getElementById('top-up-cancel-btn');
+            const topUpDoneBtn = document.getElementById('top-up-done-btn');
+            const topUpCardId = document.getElementById('top-up-card-id');
+            const topUpCustomerName = document.getElementById('top-up-customer-name');
+            const topUpCurrentBalance = document.getElementById('top-up-current-balance');
+            const topUpTotal = document.getElementById('top-up-total');
+            const topUpAmount = document.getElementById('top-up-amount');
+            const confirmTopUpCardId = document.getElementById('confirm-top-up-card-id');
+            const confirmTopUpAmount = document.getElementById('confirm-top-up-amount');
+            const confirmNewBalance = document.getElementById('confirm-new-balance');
+            
+            // Balance Inquiry Modal Elements
+            const balanceInquiryStep1 = document.getElementById('balance-inquiry-step-1');
+            const balanceInquiryStep2 = document.getElementById('balance-inquiry-step-2');
+            const balanceInquiryStatus = document.getElementById('balance-inquiry-status');
+            const balanceInquiryCancelBtn = document.getElementById('balance-inquiry-cancel-btn');
+            const balanceInquiryDoneBtn = document.getElementById('balance-inquiry-done-btn');
+            const balanceCardId = document.getElementById('balance-card-id');
+            const balanceCustomerName = document.getElementById('balance-customer-name');
+            const balanceAmount = document.getElementById('balance-amount');
+            
+            // Add event listeners for buttons
+            issueCardBtn.addEventListener('click', startIssueCard);
+            topUpBtn.addEventListener('click', startTopUp);
+            balanceInquiryBtn.addEventListener('click', startBalanceInquiry);
+            
+            // Add event listeners for modal buttons
+            issueCardCancelBtn.addEventListener('click', closeIssueCardModal);
+            issueCardDoneBtn.addEventListener('click', closeIssueCardModal);
+            issueCardNextBtn.addEventListener('click', goToIssueCardStep3);
+            
+            topUpCancelBtn.addEventListener('click', closeTopUpModal);
+            topUpDoneBtn.addEventListener('click', closeTopUpModal);
+            topUpNextBtn.addEventListener('click', goToTopUpStep3);
+            
+            balanceInquiryCancelBtn.addEventListener('click', closeBalanceInquiryModal);
+            balanceInquiryDoneBtn.addEventListener('click', closeBalanceInquiryModal);
+            
+            // Add event listeners for denomination buttons
+            const denominationBtns = document.querySelectorAll('.denomination-btn');
+            denominationBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const value = parseInt(this.getAttribute('data-value'));
+                    
+                    // Toggle active state
+                    this.classList.toggle('bg-gray-200');
+                    this.classList.toggle('bg-blue-200');
+                    
+                    // Update total based on which modal is active
+                    if (currentOperation === 'issue_card') {
+                        updateTotal(issueCardTotal, issueCardAmount);
+                    } else if (currentOperation === 'top_up') {
+                        updateTotal(topUpTotal, topUpAmount);
+                    }
+                });
+            });
+            
+            // Function to update total amount
+            function updateTotal(totalElement, amountInput) {
+                let total = 0;
+                const activeBtns = document.querySelectorAll('.denomination-btn.bg-blue-200');
+                
+                activeBtns.forEach(btn => {
+                    total += parseInt(btn.getAttribute('data-value'));
+                });
+                
+                totalElement.textContent = `₹${total}`;
+                amountInput.value = total;
+            }
+            
+            // Function to start issue card process
+            function startIssueCard() {
+                currentOperation = 'issue_card';
+                currentStep = 1;
+                scannedCardId = null;
+                
+                // Reset form
+                document.getElementById('customer-name').value = '';
+                document.getElementById('mobile-number').value = '';
+                resetDenominationButtons();
+                issueCardTotal.textContent = '₹0';
+                issueCardAmount.value = 0;
+                
+                // Show step 1
+                showIssueCardStep(1);
+                
+                // Show modal
+                issueCardModal.classList.remove('hidden');
+                
+                // Start NFC reader
+                nfcReader.startReading();
+            }
+            
+            // Function to start top-up process
+            function startTopUp() {
+                currentOperation = 'top_up';
+                currentStep = 1;
+                scannedCardId = null;
+                currentBalance = 0;
+                
+                // Reset form
+                resetDenominationButtons();
+                topUpTotal.textContent = '₹0';
+                topUpAmount.value = 0;
+                
+                // Show step 1
+                showTopUpStep(1);
+                
+                // Show modal
+                topUpModal.classList.remove('hidden');
+                
+                // Start NFC reader
+                nfcReader.startReading();
+            }
+            
+            // Function to start balance inquiry process
+            function startBalanceInquiry() {
+                currentOperation = 'balance_inquiry';
+                currentStep = 1;
+                scannedCardId = null;
+                
+                // Show step 1
+                showBalanceInquiryStep(1);
+                
+                // Show modal
+                balanceInquiryModal.classList.remove('hidden');
+                
+                // Start NFC reader
+                nfcReader.startReading();
+            }
+            
+            // Function to handle NFC reading
+            function handleNFCReading(cardData) {
+                const cardId = cardData.serialNumber;
+                
+                if (currentOperation === 'issue_card') {
+                    if (currentStep === 1) {
+                        // First scan for issue card
+                        scannedCardId = cardId;
+                        issueCardStatus1.textContent = `Card detected: ${cardId}`;
+                        
+                        // Move to step 2 after a short delay
+                        setTimeout(() => {
+                            showIssueCardStep(2);
+                        }, 1000);
+                    } else if (currentStep === 3) {
+                        // Confirmation scan for issue card
+                        if (cardId === scannedCardId) {
+                            issueCardStatus3.textContent = 'Card confirmed! Processing...';
+                            
+                            // Get form data
+                            const customerName = document.getElementById('customer-name').value;
+                            const mobileNumber = document.getElementById('mobile-number').value;
+                            const amount = issueCardAmount.value;
+                            
+                            // Send data to server
+                            cardManager.sendCardData(
+                                { serialNumber: cardId },
+                                'issue_card',
+                                {
+                                    customer_name: customerName,
+                                    mobile_number: mobileNumber,
+                                    initial_balance: amount
+                                }
+                            ).then(response => {
+                                // Move to success step
+                                showIssueCardStep(4);
+                            }).catch(error => {
+                                issueCardStatus3.textContent = `Error: ${error.message}`;
+                            });
+                        } else {
+                            issueCardStatus3.textContent = 'Error: Different card detected. Please use the same card.';
+                        }
+                    }
+                } else if (currentOperation === 'top_up') {
+                    if (currentStep === 1) {
+                        // First scan for top-up
+                        scannedCardId = cardId;
+                        topUpStatus1.textContent = `Card detected: ${cardId}`;
+                        
+                        // Get card info from server
+                        cardManager.sendCardData(
+                            { serialNumber: cardId },
+                            'balance_inquiry'
+                        ).then(response => {
+                            // Update card info
+                            topUpCardId.textContent = cardId;
+                            topUpCustomerName.textContent = response.customer_name || '-';
+                            topUpCurrentBalance.textContent = `₹${response.balance || 0}`;
+                            currentBalance = response.balance || 0;
+                            
+                            // Move to step 2
+                            showTopUpStep(2);
+                        }).catch(error => {
+                            topUpStatus1.textContent = `Error: ${error.message}`;
+                        });
+                    } else if (currentStep === 3) {
+                        // Confirmation scan for top-up
+                        if (cardId === scannedCardId) {
+                            topUpStatus3.textContent = 'Card confirmed! Processing...';
+                            
+                            // Get amount
+                            const amount = topUpAmount.value;
+                            
+                            // Send data to server
+                            cardManager.sendCardData(
+                                { serialNumber: cardId },
+                                'top_up',
+                                {
+                                    amount: amount
+                                }
+                            ).then(response => {
+                                // Move to success step
+                                showTopUpStep(4);
+                            }).catch(error => {
+                                topUpStatus3.textContent = `Error: ${error.message}`;
+                            });
+                        } else {
+                            topUpStatus3.textContent = 'Error: Different card detected. Please use the same card.';
+                        }
+                    }
+                } else if (currentOperation === 'balance_inquiry') {
+                    // Balance inquiry scan
+                    scannedCardId = cardId;
+                    balanceInquiryStatus.textContent = `Card detected: ${cardId}`;
+                    
+                    // Get balance from server
+                    cardManager.sendCardData(
+                        { serialNumber: cardId },
+                        'balance_inquiry'
+                    ).then(response => {
+                        // Update balance info
+                        balanceCardId.textContent = cardId;
+                        balanceCustomerName.textContent = response.customer_name || '-';
+                        balanceAmount.textContent = `₹${response.balance || 0}`;
+                        
+                        // Move to step 2
+                        showBalanceInquiryStep(2);
+                    }).catch(error => {
+                        balanceInquiryStatus.textContent = `Error: ${error.message}`;
+                    });
+                }
+            }
+            
+            
+            // Function to handle NFC not supported
+            function handleNFCNotSupported() {
+                console.warn('NFC is not supported on this device/browser');
+                
+                // Close any open modals
+                closeIssueCardModal();
+                closeTopUpModal();
+                closeBalanceInquiryModal();
+                
+                // Show the fallback message
+                nfcFallbackMessage.classList.remove('hidden');
+            }
+            
+            // Function to handle NFC errors
+            function handleNFCError(error) {
+                console.error('NFC Error:', error);
+                
+                // Determine if this is an unauthorized card
+                const isUnauthorized = error.message && (
+                    error.message.includes('unauthorized') || 
+                    error.message.includes('permission') || 
+                    error.message.includes('access denied')
+                );
+                
+                // Determine if this is a failed scan
+                const isScanFailed = error.message && (
+                    error.message.includes('failed to scan') || 
+                    error.message.includes('reading failed') ||
+                    error.message.includes('timeout')
+                );
+                
+                if (isUnauthorized || isScanFailed) {
+                    // Show the error modal with appropriate message
+                    nfcErrorTitle.textContent = isUnauthorized ? 'Unauthorized Card' : 'Scan Failed';
+                    nfcErrorMessage.textContent = isUnauthorized 
+                        ? 'This card is not authorized for this operation. Please use a valid card.'
+                        : 'Failed to scan the card. Please try again and make sure the card is properly positioned.';
+                    
+                    nfcErrorModal.classList.remove('hidden');
+                    
+                    // Also update the status in the current operation modal
+                    if (currentOperation === 'issue_card') {
+                        issueCardStatus1.textContent = `Error: ${error.message || error}`;
+                    } else if (currentOperation === 'top_up') {
+                        topUpStatus1.textContent = `Error: ${error.message || error}`;
+                    } else if (currentOperation === 'balance_inquiry') {
+                        balanceInquiryStatus.textContent = `Error: ${error.message || error}`;
+                    }
+                } else {
+                    // For other errors, just update the status in the current operation modal
+                    if (currentOperation === 'issue_card') {
+                        issueCardStatus1.textContent = `Error: ${error.message || error}`;
+                    } else if (currentOperation === 'top_up') {
+                        topUpStatus1.textContent = `Error: ${error.message || error}`;
+                    } else if (currentOperation === 'balance_inquiry') {
+                        balanceInquiryStatus.textContent = `Error: ${error.message || error}`;
+                    }
+                }
+            }
+            
+            // Function to go to issue card step 3
+            function goToIssueCardStep3() {
+                // Validate form
+                const customerName = document.getElementById('customer-name').value;
+                const mobileNumber = document.getElementById('mobile-number').value;
+                const amount = issueCardAmount.value;
+                
+                if (!customerName) {
+                    alert('Please enter customer name');
+                    return;
+                }
+                
+                if (!mobileNumber) {
+                    alert('Please enter mobile number');
+                    return;
+                }
+                
+                if (amount <= 0) {
+                    alert('Please select a loading amount');
+                    return;
+                }
+                
+                // Go to step 3
+                showIssueCardStep(3);
+                
+                // Start NFC reader again
+                nfcReader.startReading();
+            }
+            
+            // Function to go to top-up step 3
+            function goToTopUpStep3() {
+                // Validate form
+                const amount = topUpAmount.value;
+                
+                if (amount <= 0) {
+                    alert('Please select a top-up amount');
+                    return;
+                }
+                
+                // Go to step 3
+                showTopUpStep(3);
+                
+                // Start NFC reader again
+                nfcReader.startReading();
+            }
+            
+            // Function to close issue card modal
+            function closeIssueCardModal() {
+                issueCardModal.classList.add('hidden');
+                nfcReader.stopReading();
+                currentOperation = null;
+            }
+            
+            // Function to close top-up modal
+            function closeTopUpModal() {
+                topUpModal.classList.add('hidden');
+                nfcReader.stopReading();
+                currentOperation = null;
+            }
+            
+            // Function to close balance inquiry modal
+            function closeBalanceInquiryModal() {
+                balanceInquiryModal.classList.add('hidden');
+                nfcReader.stopReading();
+                currentOperation = null;
+            }
+            
+            // Function to reset denomination buttons
+            function resetDenominationButtons() {
+                const denominationBtns = document.querySelectorAll('.denomination-btn');
+                denominationBtns.forEach(btn => {
+                    btn.classList.remove('bg-blue-200');
+                    btn.classList.add('bg-gray-200');
+                });
+            }
+            
+            
+            // Function to show issue card step
+            function showIssueCardStep(step) {
+                currentStep = step;
+                
+                // Hide all steps
+                issueCardStep1.classList.add('hidden');
+                issueCardStep2.classList.add('hidden');
+                issueCardStep3.classList.add('hidden');
+                issueCardStep4.classList.add('hidden');
+                
+                // Show requested step
+                if (step === 1) {
+                    issueCardStep1.classList.remove('hidden');
+                } else if (step === 2) {
+                    issueCardStep2.classList.remove('hidden');
+                } else if (step === 3) {
+                    // Update confirmation info
+                    confirmCustomerName.textContent = document.getElementById('customer-name').value;
+                    confirmMobileNumber.textContent = document.getElementById('mobile-number').value;
+                    confirmAmount.textContent = issueCardTotal.textContent;
+                    
+                    issueCardStep3.classList.remove('hidden');
+                } else if (step === 4) {
+                    issueCardStep4.classList.remove('hidden');
+                }
+            }
+            
+            // Function to show top-up step
+            function showTopUpStep(step) {
+                currentStep = step;
+                
+                // Hide all steps
+                topUpStep1.classList.add('hidden');
+                topUpStep2.classList.add('hidden');
+                topUpStep3.classList.add('hidden');
+                topUpStep4.classList.add('hidden');
+                
+                // Show requested step
+                if (step === 1) {
+                    topUpStep1.classList.remove('hidden');
+                } else if (step === 2) {
+                    topUpStep2.classList.remove('hidden');
+                } else if (step === 3) {
+                    // Update confirmation info
+                    confirmTopUpCardId.textContent = scannedCardId;
+                    confirmTopUpAmount.textContent = topUpTotal.textContent;
+                    const newBalance = parseFloat(currentBalance) + parseFloat(topUpAmount.value);
+                    confirmNewBalance.textContent = `₹${newBalance}`;
+                    
+                    topUpStep3.classList.remove('hidden');
+                } else if (step === 4) {
+                    topUpStep4.classList.remove('hidden');
+                }
+            }
+            
+            // Function to show balance inquiry step
+            function showBalanceInquiryStep(step) {
+                currentStep = step;
+                
+                // Hide all steps
+                balanceInquiryStep1.classList.add('hidden');
+                balanceInquiryStep2.classList.add('hidden');
+                
+                // Show requested step
+                if (step === 1) {
+                    balanceInquiryStep1.classList.remove('hidden');
+                } else if (step === 2) {
+                    balanceInquiryStep2.classList.remove('hidden');
+                }
+            }
         });
     </script>
 {% endblock %}
+            
+            
