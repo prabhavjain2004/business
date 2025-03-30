@@ -195,10 +195,32 @@
             
             addLogMessage(`Processing payment of ₹${amount}...`);
             
+            // Add X-Requested-With header to identify as AJAX request
+            const headers = {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            };
+            
             // Send payment request to server
-            window.paymentCardManager.sendCardData(cardData, 'payment', {
-                amount: amount,
-                notes: notes
+            fetch('/api/nfc/', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    action: 'payment',
+                    card_id: cardData.serialNumber,
+                    secure_key: cardData.secureKey,
+                    amount: amount,
+                    notes: notes
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Payment failed');
+                    });
+                }
+                return response.json();
             })
             .then(response => {
                 // Show success message
@@ -272,6 +294,25 @@
                     </div>
                 `;
             }
+        }
+        
+        // Get CSRF token from cookie
+        function getCsrfToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            
+            return cookieValue;
         }
         
         // Play sound

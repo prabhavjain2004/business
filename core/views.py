@@ -226,8 +226,10 @@ def payment_view(request):
     if request.method == 'POST':
         form = TransactionForm(request.POST)
         if form.is_valid():
-            # Process the payment
-            return redirect('payment_success')
+            # The actual payment processing is handled by the JavaScript in the template
+            # which calls the NFC API directly
+            messages.success(request, 'Form is valid. Please scan the NFC card to complete the payment.')
+            return render(request, 'core/payment.html', {'form': form})
     else:
         form = TransactionForm()
     
@@ -461,6 +463,28 @@ def nfc_api(request):
                     transaction.user = request.user
                     if hasattr(request.user, 'outlet'):
                         transaction.outlet = request.user.outlet
+                
+                # For AJAX requests from JavaScript, try to get the user from the session
+                elif 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
+                    # Get the session key from the request
+                    session_key = request.COOKIES.get('sessionid')
+                    if session_key:
+                        from django.contrib.sessions.models import Session
+                        from django.contrib.auth.models import User
+                        try:
+                            # Get the session
+                            session = Session.objects.get(session_key=session_key)
+                            # Get the user_id from the session
+                            user_id = session.get_decoded().get('_auth_user_id')
+                            if user_id:
+                                # Get the user
+                                user = User.objects.get(pk=user_id)
+                                transaction.user = user
+                                # If the user has an outlet, add it to the transaction
+                                if hasattr(user, 'outlet'):
+                                    transaction.outlet = user.outlet
+                        except (Session.DoesNotExist, User.DoesNotExist):
+                            pass
                 
                 # Save transaction (this will update card balance in the save method)
                 transaction.save()
