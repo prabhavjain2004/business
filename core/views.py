@@ -102,12 +102,20 @@ def create_outlet(request):
                     password=form.cleaned_data['password']
                 )
                 
-                # Create profile with outlet user type
-                profile = Profile.objects.create(
+                # Get or update the profile (it should already exist from the signal)
+                profile, created = Profile.objects.get_or_create(
                     user=user,
-                    email=form.cleaned_data['email'],
-                    user_type='outlet'
+                    defaults={
+                        'email': form.cleaned_data['email'],
+                        'user_type': 'outlet'
+                    }
                 )
+                
+                # If the profile already existed, update it
+                if not created:
+                    profile.email = form.cleaned_data['email']
+                    profile.user_type = 'outlet'
+                    profile.save()
                 
                 # Create outlet
                 outlet = form.save(commit=False)
