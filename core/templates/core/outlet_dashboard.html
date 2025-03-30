@@ -43,6 +43,33 @@
                 </ul>
             </div>
 
+            <!-- Card Operations Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Card Operations</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <a href="{% url 'issue_card' %}" class="bg-green-600 text-white py-3 px-4 rounded-lg text-center font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Issue New Card
+                    </a>
+                    
+                    <a href="{% url 'top_up' %}" class="bg-blue-600 text-white py-3 px-4 rounded-lg text-center font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Top-Up Card
+                    </a>
+                    
+                    <a href="{% url 'balance_inquiry' %}" class="bg-purple-600 text-white py-3 px-4 rounded-lg text-center font-semibold hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Balance Inquiry
+                    </a>
+                </div>
+            </div>
+
             <!-- Recent Activity Card -->
             <div class="bg-blue-50 p-6 rounded-lg shadow-md">
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Recent Activity</h2>

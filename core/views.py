@@ -171,6 +171,22 @@ def custom_logout(request):
     messages.success(request, 'You have been successfully logged out.')
     return redirect('home')
 
+# Card operation views
+@login_required
+def issue_card_view(request):
+    """View for the issue card page"""
+    return render(request, 'core/issue_card.html')
+
+@login_required
+def top_up_view(request):
+    """View for the top-up page"""
+    return render(request, 'core/top_up.html')
+
+@login_required
+def balance_inquiry_view(request):
+    """View for the balance inquiry page"""
+    return render(request, 'core/balance_inquiry.html')
+
 # NFC related views
 @login_required
 def nfc_reader(request):

@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+
+{% block title %}Issue Card - My Project{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-blue-600 mb-8">Issue New Card</h1>
+        
+        <div class="grid grid-cols-1 gap-6">
+            <!-- NFC Reader Container -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div id="issue-card-container">
+                    <!-- Step 1: Scan Card -->
+                    <div id="step-1" class="step-container">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 1: Scan Card</h2>
+                        <p class="text-lg text-center mb-4">Please tap an NFC card to begin</p>
+                        <div class="flex justify-center mb-4">
+                            <div class="animate-pulse bg-blue-100 rounded-full p-8">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p id="scan-status-1" class="text-center text-gray-600">Waiting for card...</p>
+                    </div>
+                    
+                    <!-- Step 2: Enter Customer Details -->
+                    <div id="step-2" class="step-container hidden">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 2: Enter Customer Details</h2>
+                        <p class="text-lg text-center mb-4">Card detected! Enter customer details</p>
+                        <form id="customer-form">
+                            <div class="mb-4">
+                                <label for="customer-name" class="block text-gray-700 mb-2">Customer Name</label>
+                                <input type="text" id="customer-name" name="customer-name" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter customer name" required>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="mobile-number" class="block text-gray-700 mb-2">Mobile Number</label>
+                                <input type="tel" id="mobile-number" name="mobile-number" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter mobile number" required>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Loading Amount</label>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
+                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
+                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
+                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                                    <span class="font-semibold">Total Amount:</span>
+                                    <span id="total-amount" class="text-lg font-bold">₹0</span>
+                                    <input type="hidden" id="amount-input" name="amount" value="0">
+                                </div>
+                            </div>
+                        </form>
+                        <div class="flex justify-end mt-4">
+                            <button id="next-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Confirm Card -->
+                    <div id="step-3" class="step-container hidden">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 3: Confirm Card</h2>
+                        <p class="text-lg text-center mb-4">Please tap the card again to confirm and complete issuance</p>
+                        <div class="flex justify-center mb-4">
+                            <div class="animate-pulse bg-green-100 rounded-full p-8">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                            <p><strong>Customer:</strong> <span id="confirm-customer-name"></span></p>
+                            <p><strong>Mobile:</strong> <span id="confirm-mobile-number"></span></p>
+                            <p><strong>Amount:</strong> <span id="confirm-amount"></span></p>
+                        </div>
+                        <p id="scan-status-3" class="text-center text-gray-600">Waiting for confirmation...</p>
+                    </div>
+                    
+                    <!-- Step 4: Success -->
+                    <div id="step-4" class="step-container hidden">
+                        <div class="text-center">
+                            <div class="flex justify-center mb-4">
+                                <div class="bg-green-100 rounded-full p-8">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <h3 class="text-xl font-semibold text-green-600 mb-2">Card Issued Successfully!</h3>
+                            <p class="text-gray-600 mb-4">The card has been issued and is ready to use.</p>
+                            <button id="done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Log -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Activity Log</h2>
+                <div id="activity-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm">
+                    <p class="text-gray-500">NFC reader initialized.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 flex justify-center">
+            <a href="{% url 'dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- NFC Support Fallback Message -->
+<div id="nfc-fallback-message" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-yellow-500 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">NFC Not Supported</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-yellow-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-yellow-600 mb-2">Browser NFC Support Required</h3>
+                <p class="text-gray-600 mb-4">Your browser does not support NFC functionality. Please try one of the following:</p>
+                <ul class="text-left text-gray-600 mb-4 pl-6 list-disc">
+                    <li class="mb-2">Use Google Chrome on Android (version 89 or later)</li>
+                    <li class="mb-2">Make sure NFC is enabled on your device</li>
+                    <li class="mb-2">Contact support if you need assistance</li>
+                </ul>
+                <button id="nfc-fallback-close-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Message Modal -->
+<div id="nfc-error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-red-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">NFC Error</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-red-100 rounded-full p-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 id="nfc-error-title" class="text-xl font-semibold text-red-600 mb-2">Error Occurred</h3>
+                <p id="nfc-error-message" class="text-gray-600 mb-4">An error occurred while processing your request.</p>
+                <button id="nfc-error-close-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'core/js/nfc.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize NFC Card Manager
+            const cardManager = new NFCCardManager('/api/nfc/');
+            
+            // Get fallback and error modal elements
+            const nfcFallbackMessage = document.getElementById('nfc-fallback-message');
+            const nfcErrorModal = document.getElementById('nfc-error-modal');
+            const nfcErrorTitle = document.getElementById('nfc-error-title');
+            const nfcErrorMessage = document.getElementById('nfc-error-message');
+            const nfcFallbackCloseBtn = document.getElementById('nfc-fallback-close-btn');
+            const nfcErrorCloseBtn = document.getElementById('nfc-error-close-btn');
+            
+            // Add event listeners for fallback and error modals
+            nfcFallbackCloseBtn.addEventListener('click', function() {
+                nfcFallbackMessage.classList.add('hidden');
+            });
+            
+            nfcErrorCloseBtn.addEventListener('click', function() {
+                nfcErrorModal.classList.add('hidden');
+            });
+            
+            // Initialize NFC Reader
+            const nfcReader = new NFCReader({
+                onReading: handleNFCReading,
+                onError: handleNFCError,
+                onNotSupported: handleNFCNotSupported
+            });
+            
+            // Current operation state
+            let currentStep = 1;
+            let scannedCardId = null;
+            
+            // Get step containers
+            const step1 = document.getElementById('step-1');
+            const step2 = document.getElementById('step-2');
+            const step3 = document.getElementById('step-3');
+            const step4 = document.getElementById('step-4');
+            
+            // Get status elements
+            const scanStatus1 = document.getElementById('scan-status-1');
+            const scanStatus3 = document.getElementById('scan-status-3');
+            
+            // Get form elements
+            const customerForm = document.getElementById('customer-form');
+            const customerName = document.getElementById('customer-name');
+            const mobileNumber = document.getElementById('mobile-number');
+            const totalAmount = document.getElementById('total-amount');
+            const amountInput = document.getElementById('amount-input');
+            
+            // Get confirmation elements
+            const confirmCustomerName = document.getElementById('confirm-customer-name');
+            const confirmMobileNumber = document.getElementById('confirm-mobile-number');
+            const confirmAmount = document.getElementById('confirm-amount');
+            
+            // Get buttons
+            const nextBtn = document.getElementById('next-btn');
+            const doneBtn = document.getElementById('done-btn');
+            
+            // Get activity log
+            const activityLog = document.getElementById('activity-log');
+            
+            // Add event listeners for buttons
+            nextBtn.addEventListener('click', goToStep3);
+            doneBtn.addEventListener('click', resetProcess);
+            
+            // Add event listeners for denomination buttons
+            const denominationBtns = document.querySelectorAll('.denomination-btn');
+            denominationBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Toggle active state
+                    this.classList.toggle('bg-gray-200');
+                    this.classList.toggle('bg-blue-200');
+                    
+                    // Update total
+                    updateTotal();
+                });
+            });
+            
+            // Start NFC reader
+            nfcReader.startReading();
+            addLogMessage('NFC reader started. Waiting for card...');
+            
+            // Function to handle NFC reading
+            function handleNFCReading(cardData) {
+                const cardId = cardData.serialNumber;
+                
+                if (currentStep === 1) {
+                    // First scan for issue card
+                    scannedCardId = cardId;
+                    scanStatus1.textContent = `Card detected: ${cardId}`;
+                    addLogMessage(`Card detected: ${cardId}`);
+                    
+                    // Move to step 2 after a short delay
+                    setTimeout(() => {
+                        showStep(2);
+                    }, 1000);
+                } else if (currentStep === 3) {
+                    // Confirmation scan for issue card
+                    if (cardId === scannedCardId) {
+                        scanStatus3.textContent = 'Card confirmed! Processing...';
+                        addLogMessage('Card confirmed! Processing...');
+                        
+                        // Get form data
+                        const name = customerName.value;
+                        const mobile = mobileNumber.value;
+                        const amount = amountInput.value;
+                        
+                        // Send data to server
+                        cardManager.sendCardData(
+                            { serialNumber: cardId },
+                            'issue_card',
+                            {
+                                customer_name: name,
+                                mobile_number: mobile,
+                                initial_balance: amount
+                            }
+                        ).then(response => {
+                            // Move to success step
+                            addLogMessage('Card issued successfully!');
+                            showStep(4);
+                        }).catch(error => {
+                            scanStatus3.textContent = `Error: ${error.message}`;
+                            addLogMessage(`Error: ${error.message}`, 'error');
+                        });
+                    } else {
+                        scanStatus3.textContent = 'Error: Different card detected. Please use the same card.';
+                        addLogMessage('Error: Different card detected. Please use the same card.', 'error');
+                    }
+                }
+            }
+            
+            // Function to handle NFC not supported
+            function handleNFCNotSupported() {
+                console.warn('NFC is not supported on this device/browser');
+                addLogMessage('NFC is not supported on this device/browser', 'error');
+                
+                // Show the fallback message
+                nfcFallbackMessage.classList.remove('hidden');
+            }
+            
+            // Function to handle NFC errors
+            function handleNFCError(error) {
+                console.error('NFC Error:', error);
+                addLogMessage(`NFC Error: ${error.message || error}`, 'error');
+                
+                // Show the error modal
+                nfcErrorTitle.textContent = 'NFC Error';
+                nfcErrorMessage.textContent = error.message || error;
+                nfcErrorModal.classList.remove('hidden');
+            }
+            
+            // Function to go to step 3
+            function goToStep3() {
+                // Validate form
+                if (!customerName.value) {
+                    alert('Please enter customer name');
+                    return;
+                }
+                
+                if (!mobileNumber.value) {
+                    alert('Please enter mobile number');
+                    return;
+                }
+                
+                if (parseInt(amountInput.value) <= 0) {
+                    alert('Please select a loading amount');
+                    return;
+                }
+                
+                // Update confirmation info
+                confirmCustomerName.textContent = customerName.value;
+                confirmMobileNumber.textContent = mobileNumber.value;
+                confirmAmount.textContent = totalAmount.textContent;
+                
+                // Go to step 3
+                showStep(3);
+                addLogMessage('Please tap the card again to confirm issuance');
+            }
+            
+            // Function to reset the process
+            function resetProcess() {
+                // Reset form
+                customerName.value = '';
+                mobileNumber.value = '';
+                resetDenominationButtons();
+                totalAmount.textContent = '₹0';
+                amountInput.value = 0;
+                
+                // Reset state
+                currentStep = 1;
+                scannedCardId = null;
+                
+                // Show step 1
+                showStep(1);
+                addLogMessage('Process reset. Waiting for card...');
+            }
+            
+            // Function to show step
+            function showStep(step) {
+                currentStep = step;
+                
+                // Hide all steps
+                step1.classList.add('hidden');
+                step2.classList.add('hidden');
+                step3.classList.add('hidden');
+                step4.classList.add('hidden');
+                
+                // Show requested step
+                if (step === 1) {
+                    step1.classList.remove('hidden');
+                } else if (step === 2) {
+                    step2.classList.remove('hidden');
+                } else if (step === 3) {
+                    step3.classList.remove('hidden');
+                } else if (step === 4) {
+                    step4.classList.remove('hidden');
+                }
+            }
+            
+            // Function to update total amount
+            function updateTotal() {
+                let total = 0;
+                const activeBtns = document.querySelectorAll('.denomination-btn.bg-blue-200');
+                
+                activeBtns.forEach(btn => {
+                    total += parseInt(btn.getAttribute('data-value'));
+                });
+                
+                totalAmount.textContent = `₹${total}`;
+                amountInput.value = total;
+            }
+            
+            // Function to reset denomination buttons
+            function resetDenominationButtons() {
+                const denominationBtns = document.querySelectorAll('.denomination-btn');
+                denominationBtns.forEach(btn => {
+                    btn.classList.remove('bg-blue-200');
+                    btn.classList.add('bg-gray-200');
+                });
+            }
+            
+            // Function to add a message to the log
+            function addLogMessage(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('p');
+                
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                if (type === 'error') {
+                    logEntry.classList.add('text-red-500');
+                } else {
+                    logEntry.classList.add('text-gray-700');
+                }
+                
+                activityLog.appendChild(logEntry);
+                activityLog.scrollTop = activityLog.scrollHeight;
+            }
+        });
+    </script>
+{% endblock %}

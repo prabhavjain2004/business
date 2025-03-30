@@ -30,6 +30,11 @@ urlpatterns = [
     
     # Card management
     path('management/cards/', views.card_management, name='card_management'),
+    
+    # Card operation pages
+    path('cards/issue/', views.issue_card_view, name='issue_card'),
+    path('cards/top-up/', views.top_up_view, name='top_up'),
+    path('cards/balance/', views.balance_inquiry_view, name='balance_inquiry'),
 ]
 
 
