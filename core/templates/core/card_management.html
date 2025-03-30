@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Card Management - My Project{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-blue-600 mb-8">Card Management</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Cards List -->
+            <div class="md:col-span-2">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-blue-600">Registered Cards</h2>
+                        <a href="{% url 'admin_dashboard' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                    
+                    {% if cards %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-blue-600 text-white">
+                                <tr>
+                                    <th class="py-3 px-4 text-left">Card ID</th>
+                                    <th class="py-3 px-4 text-left">Name</th>
+                                    <th class="py-3 px-4 text-left">Status</th>
+                                    <th class="py-3 px-4 text-left">Created</th>
+                                    <th class="py-3 px-4 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for card in cards %}
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-4">{{ card.card_id }}</td>
+                                    <td class="py-3 px-4">{{ card.name|default:"Unnamed" }}</td>
+                                    <td class="py-3 px-4">
+                                        {% if card.is_active %}
+                                        <span class="text-green-600">Active</span>
+                                        {% else %}
+                                        <span class="text-red-600">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">{{ card.created_at|date:"M d, Y" }}</td>
+                                    <td class="py-3 px-4">
+                                        <a href="{% url 'update_nfc_card' card.id %}" class="text-blue-600 hover:text-blue-500 mr-2">Edit</a>
+                                        <a href="{% url 'delete_nfc_card' card.id %}" class="text-red-600 hover:text-red-500">Delete</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="bg-gray-50 p-4 rounded-lg text-center">
+                        <p class="text-gray-600">No cards registered yet.</p>
+                        <p class="text-gray-500 text-sm mt-2">Use the form to add new cards.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Card Form -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Add/Edit Card</h2>
+                
+                <form method="post" action="{% url 'card_management' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="card_id" class="block text-gray-700 mb-2">Card ID</label>
+                        <input type="text" id="card_id" name="card_id" value="{{ form.card_id.value|default:'' }}" 
+                               class="w-full p-2 border border-gray-300 rounded-lg" 
+                               {% if not form.card_id.value %}placeholder="Enter card ID"{% endif %}>
+                        {% if form.card_id.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.card_id.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="name" class="block text-gray-700 mb-2">Card Name (Optional)</label>
+                        <input type="text" id="name" name="name" value="{{ form.name.value|default:'' }}" 
+                               class="w-full p-2 border border-gray-300 rounded-lg" 
+                               placeholder="e.g. Employee Card, Visitor Pass">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="flex items-center text-gray-700">
+                            <input type="checkbox" name="is_active" 
+                                   {% if form.is_active.value %}checked{% endif %} 
+                                   class="mr-2">
+                            Active
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            {% if form.instance.pk %}Update Card{% else %}Add Card{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Card Usage Logs Section -->
+        <div class="mt-8">
+            <h2 class="text-2xl font-semibold text-blue-600 mb-4">Recent Card Activity</h2>
+            
+            {% if logs %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg overflow-hidden shadow-md">
+                    <thead class="bg-blue-600 text-white">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Card ID</th>
+                            <th class="py-3 px-4 text-left">Outlet</th>
+                            <th class="py-3 px-4 text-left">User</th>
+                            <th class="py-3 px-4 text-left">Timestamp</th>
+                            <th class="py-3 px-4 text-left">Action</th>
+                            <th class="py-3 px-4 text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4">{{ log.card_identifier }}</td>
+                            <td class="py-3 px-4">{{ log.outlet.outlet_name|default:"N/A" }}</td>
+                            <td class="py-3 px-4">{{ log.user.username|default:"N/A" }}</td>
+                            <td class="py-3 px-4">{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                            <td class="py-3 px-4">{{ log.action|default:"N/A" }}</td>
+                            <td class="py-3 px-4">
+                                {% if log.success %}
+                                <span class="text-green-600">Success</span>
+                                {% else %}
+                                <span class="text-red-600">Failed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-gray-50 p-4 rounded-lg text-center shadow-md">
+                <p class="text-gray-600">No card activity logs yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // If there's a message in the URL (e.g., after form submission)
+            const urlParams = new URLSearchParams(window.location.search);
+            const message = urlParams.get('message');
+            if (message) {
+                // Display the message (you could implement a toast notification here)
+                alert(decodeURIComponent(message));
+            }
+        });
+    </script>
+{% endblock %}

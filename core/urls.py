@@ -27,4 +27,9 @@ urlpatterns = [
     path('nfc/cards/<uuid:card_id>/update/', views.update_nfc_card, name='update_nfc_card'),
     path('nfc/cards/<uuid:card_id>/delete/', views.delete_nfc_card, name='delete_nfc_card'),
     path('api/nfc/', views.nfc_api, name='nfc_api'),
+    
+    # Card management
+    path('management/cards/', views.card_management, name='card_management'),
 ]
+
+

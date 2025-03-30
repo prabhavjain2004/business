@@ -213,6 +213,28 @@ def nfc_management(request):
     })
 
 @user_passes_test(lambda u: u.is_authenticated and u.is_staff)
+def card_management(request):
+    """Admin view for managing cards"""
+    cards = NFCCard.objects.all().order_by('-created_at')
+    logs = NFCLog.objects.all().order_by('-timestamp')[:20]
+    
+    # Handle form for creating/updating cards
+    if request.method == 'POST':
+        form = NFCCardForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Card saved successfully!')
+            return redirect('card_management')
+    else:
+        form = NFCCardForm()
+    
+    return render(request, 'core/card_management.html', {
+        'cards': cards,
+        'logs': logs,
+        'form': form
+    })
+
+@user_passes_test(lambda u: u.is_authenticated and u.is_staff)
 def create_nfc_card(request):
     """View for creating a new NFC card"""
     if request.method == 'POST':
