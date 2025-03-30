@@ -294,16 +294,34 @@ def nfc_api(request):
             # Parse JSON data
             data = json.loads(request.body)
             card_id = data.get('card_id')
+            secure_key = data.get('secure_key')
             action = data.get('action', '')
             
-            if not card_id:
-                return JsonResponse({'status': 'error', 'message': 'Card ID is required'}, status=400)
+            # For initial card registration, we need the card_id
+            if not card_id and not secure_key:
+                return JsonResponse({'status': 'error', 'message': 'Card ID or Secure Key is required'}, status=400)
             
-            # Get or create the card
-            card, created = NFCCard.objects.get_or_create(
-                card_id=card_id,
-                defaults={'name': f'Card {card_id[:8]}...'}
-            )
+            # If this is a new card being registered
+            if card_id and not secure_key and action != 'balance_inquiry' and action != 'top_up':
+                # Get or create the card with a new secure key
+                card, created = NFCCard.objects.get_or_create(
+                    card_id=card_id,
+                    defaults={'name': f'Card {card_id[:8]}...'}
+                )
+            # For transactions, use the secure key instead of card_id
+            elif secure_key:
+                try:
+                    card = NFCCard.objects.get(secure_key=secure_key)
+                    created = False
+                except NFCCard.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Invalid secure key'}, status=400)
+            # If only card_id is provided for transactions
+            elif card_id:
+                try:
+                    card = NFCCard.objects.get(card_id=card_id)
+                    created = False
+                except NFCCard.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Card not found'}, status=400)
             
             # Handle specific actions
             if action == 'issue_card':
@@ -351,7 +369,8 @@ def nfc_api(request):
             
             response_data = {
                 'status': 'success',
-                'card_id': card_id,
+                'card_id': card.card_id,
+                'secure_key': card.secure_key,
                 'action': action,
                 'card_registered': not created,
                 'log_id': str(log.id)
@@ -360,6 +379,7 @@ def nfc_api(request):
             # Add balance to response for balance inquiry
             if action == 'balance_inquiry':
                 response_data['balance'] = float(card.balance)
+                response_data['customer_name'] = card.customer_name
             
             return JsonResponse(response_data)
             

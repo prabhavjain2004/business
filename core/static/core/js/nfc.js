@@ -153,6 +153,9 @@ class NFCReader {
                 }]
             };
             
+            // Store the simulated data for future use
+            this.options.lastCardData = simulatedData;
+            
             this.options.onReading(simulatedData);
         }
         
@@ -172,21 +175,38 @@ class NFCCardManager {
      * Send card data to the server
      * @param {Object} cardData - The NFC card data
      * @param {string} action - The action to perform with the card
+     * @param {Object} additionalData - Additional data to send with the request
      * @returns {Promise} - Promise resolving to the server response
      */
-    async sendCardData(cardData, action = '') {
+    async sendCardData(cardData, action = '', additionalData = {}) {
         try {
+            // Prepare request data
+            const requestData = {
+                action: action,
+                timestamp: new Date().toISOString(),
+                ...additionalData
+            };
+            
+            // For initial card registration, use card_id
+            if (action === 'issue_card' || !cardData.secureKey) {
+                requestData.card_id = cardData.serialNumber;
+            } 
+            // For transactions, use secure_key if available
+            else if (cardData.secureKey) {
+                requestData.secure_key = cardData.secureKey;
+            }
+            // Fallback to card_id if secure_key is not available
+            else {
+                requestData.card_id = cardData.serialNumber;
+            }
+            
             const response = await fetch(this.apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCsrfToken()
                 },
-                body: JSON.stringify({
-                    card_id: cardData.serialNumber,
-                    action: action,
-                    timestamp: new Date().toISOString()
-                })
+                body: JSON.stringify(requestData)
             });
             
             if (!response.ok) {
@@ -369,7 +389,11 @@ class NFCUIHandler {
             }
             
             try {
-                const response = await this.cardManager.sendCardData({ serialNumber: cardId }, action);
+                // Find the card data with secure key
+                const cardData = this.reader.options.lastCardData || { serialNumber: cardId };
+                
+                // Send the action with the card data (which may include secure key)
+                const response = await this.cardManager.sendCardData(cardData, action);
                 this.addLogMessage(`Action "${action}" submitted successfully.`);
                 this.actionContainer.classList.add('hidden');
             } catch (error) {
@@ -452,6 +476,27 @@ class NFCUIHandler {
         
         // Add log message
         this.addLogMessage(`Card detected: ${cardData.serialNumber}`);
+        
+        // Get card details from server including secure key
+        this.cardManager.sendCardData({ serialNumber: cardData.serialNumber }, 'balance_inquiry')
+            .then(response => {
+                // Store secure key for future transactions
+                cardData.secureKey = response.secure_key;
+                
+                // Store the card data with secure key for future use
+                this.reader.options.lastCardData = cardData;
+                
+                // Add additional info to log
+                if (response.customer_name) {
+                    this.addLogMessage(`Customer: ${response.customer_name}`);
+                }
+                if (response.balance !== undefined) {
+                    this.addLogMessage(`Balance: ₹${response.balance}`);
+                }
+            })
+            .catch(error => {
+                this.addLogMessage(`Error getting card details: ${error.message}`, 'error');
+            });
         
         // Play a sound to indicate successful reading
         this.playSound('success');

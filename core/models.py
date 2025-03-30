@@ -1,9 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 import uuid
-
+import random
+import string
 # User type choices
 USER_TYPE_CHOICES = (
     ('admin', 'Admin'),
@@ -64,6 +65,8 @@ class NFCCard(models.Model):
     """Model for storing NFC card information"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     card_id = models.CharField(max_length=255, unique=True, help_text="Unique identifier of the NFC card")
+    secure_key = models.CharField(max_length=16, unique=True, blank=True,
+                                 help_text="Secure 16-character alphanumeric key for transactions")
     name = models.CharField(max_length=100, blank=True, help_text="Optional name for the card")
     customer_name = models.CharField(max_length=100, blank=True, help_text="Name of the customer")
     mobile_number = models.CharField(max_length=15, blank=True, help_text="Mobile number of the customer")

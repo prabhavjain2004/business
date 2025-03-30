@@ -40,9 +40,10 @@ class OutletUpdateForm(forms.ModelForm):
 class NFCCardForm(forms.ModelForm):
     class Meta:
         model = NFCCard
-        fields = ['card_id', 'name', 'is_active']
+        fields = ['card_id', 'secure_key', 'name', 'is_active']
         widgets = {
             'card_id': forms.TextInput(attrs={'readonly': 'readonly'}),
+            'secure_key': forms.TextInput(attrs={'readonly': 'readonly'}),
         }
 
 class NFCLogForm(forms.ModelForm):

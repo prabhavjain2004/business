@@ -53,6 +53,7 @@
                             <thead class="bg-blue-600 text-white">
                                 <tr>
                                     <th class="py-3 px-4 text-left">Card ID</th>
+                                    <th class="py-3 px-4 text-left">Secure Key</th>
                                     <th class="py-3 px-4 text-left">Name</th>
                                     <th class="py-3 px-4 text-left">Status</th>
                                     <th class="py-3 px-4 text-left">Created</th>
@@ -63,6 +64,7 @@
                                 {% for card in cards %}
                                 <tr class="border-b border-gray-200 hover:bg-gray-50">
                                     <td class="py-3 px-4">{{ card.card_id }}</td>
+                                    <td class="py-3 px-4">{{ card.secure_key }}</td>
                                     <td class="py-3 px-4">{{ card.name|default:"Unnamed" }}</td>
                                     <td class="py-3 px-4">
                                         {% if card.is_active %}
@@ -106,6 +108,14 @@
                         <p class="text-red-500 text-sm mt-1">{{ form.card_id.errors.0 }}</p>
                         {% endif %}
                     </div>
+                    
+                    <div class="mb-4">
+                        <label for="secure_key" class="block text-gray-700 mb-2">Secure Key</label>
+                        <input type="text" id="secure_key" name="secure_key" value="{{ form.secure_key.value|default:'Auto-generated' }}" 
+                               class="w-full p-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                        <p class="text-gray-500 text-sm mt-1">This secure key is used for all transactions</p>
+                    </div>
+                    
                     
                     <div class="mb-4">
                         <label for="name" class="block text-gray-700 mb-2">Card Name (Optional)</label>
