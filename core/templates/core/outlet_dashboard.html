@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Outlet Dashboard - My Project{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-blue-600 mb-8">Outlet Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Outlet Profile Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Outlet Information</h2>
+                <div class="space-y-2 text-gray-600">
+                    {% if user.outlet %}
+                        <p><span class="font-medium">Outlet Name:</span> {{ user.outlet.outlet_name }}</p>
+                        <p><span class="font-medium">Address:</span> {{ user.outlet.address }}</p>
+                        <p><span class="font-medium">Contact Person:</span> {{ user.outlet.contact_person }}</p>
+                        <p><span class="font-medium">Phone Number:</span> {{ user.outlet.phone_number }}</p>
+                        <p><span class="font-medium">Status:</span> 
+                            {% if user.outlet.is_active %}
+                                <span class="text-green-600">Active</span>
+                            {% else %}
+                                <span class="text-red-600">Inactive</span>
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <p>No outlet information available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Quick Actions</h2>
+                <ul class="space-y-2">
+                    <li><a href="{% url 'nfc_reader' %}" class="text-blue-600 hover:text-blue-500">NFC Card Reader</a></li>
+                    <p class="text-sm text-gray-500">Scan and manage NFC cards</p>
+                    <li><a href="{% url 'update_profile' %}" class="text-blue-600 hover:text-blue-500">Update Profile</a></li>
+                    <p class="text-sm text-gray-500">Manage your personal information</p>
+                    <li><a href="{% url 'password_reset' %}" class="text-blue-600 hover:text-blue-500">Change Password</a></li>
+                    <p class="text-sm text-gray-500">Update your account security</p>
+                </ul>
+            </div>
+
+            <!-- Recent Activity Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Recent Activity</h2>
+                <div class="text-gray-600">
+                    {% if user.last_login %}
+                        <p>Last active: {{ user.last_login|timesince }} ago</p>
+                    {% else %}
+                        <p>No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
