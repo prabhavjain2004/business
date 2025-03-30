@@ -79,6 +79,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'core/js/nfc.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const paymentForm = document.getElementById('payment-form');
@@ -88,24 +90,37 @@
         const paymentResult = document.getElementById('payment-result');
         
         // Initialize NFC reader when the page loads
+        let nfcReader = null;
+        let cardManager = null;
+        
         if (typeof NFCReader !== 'undefined' && typeof NFCCardManager !== 'undefined') {
-            const nfcReader = new NFCReader({
+            nfcReader = new NFCReader({
                 onReading: handleCardReading,
                 onError: handleError,
                 onSuccess: handleSuccess,
                 onNotSupported: handleNotSupported
             });
             
-            const cardManager = new NFCCardManager('/api/nfc/');
-            
-            // Initialize UI handler
-            const uiHandler = new NFCUIHandler('nfc-reader', nfcReader, cardManager);
-            
-            // Store references for later use
-            window.paymentNfcReader = nfcReader;
-            window.paymentCardManager = cardManager;
-            window.paymentUiHandler = uiHandler;
+            cardManager = new NFCCardManager('/api/nfc/');
         }
+        
+        // Add activity log to the NFC reader container
+        const activityLogHtml = `
+            <div class="mt-4">
+                <h3 class="text-lg font-medium text-blue-600 mb-2">Activity Log</h3>
+                <div id="activity-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm">
+                    <p class="text-gray-500">NFC reader initialized. Click "Prepare Payment" to start.</p>
+                </div>
+            </div>
+        `;
+        
+        // Add the activity log to the NFC reader container
+        const nfcReaderElement = document.getElementById('nfc-reader');
+        if (nfcReaderElement) {
+            nfcReaderElement.insertAdjacentHTML('afterend', activityLogHtml);
+        }
+        
+        const activityLog = document.getElementById('activity-log');
         
         // Handle prepare payment button click
         preparePaymentBtn.addEventListener('click', function() {
@@ -122,7 +137,41 @@
             
             // Scroll to NFC reader
             nfcReaderContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            // Initialize UI handler if not already initialized
+            if (!window.paymentUiHandler && nfcReader) {
+                // Initialize UI handler
+                const uiHandler = new NFCUIHandler('nfc-reader', nfcReader, cardManager);
+                
+                // Store references for later use
+                window.paymentNfcReader = nfcReader;
+                window.paymentCardManager = cardManager;
+                window.paymentUiHandler = uiHandler;
+                
+                // Start NFC reader
+                window.paymentNfcReader.startReading();
+                addLogMessage('NFC reader started. Waiting for card...');
+            }
         });
+        
+        // Function to add a message to the log
+        function addLogMessage(message, type = 'info') {
+            if (!activityLog) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('p');
+            
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            if (type === 'error') {
+                logEntry.classList.add('text-red-500');
+            } else {
+                logEntry.classList.add('text-gray-700');
+            }
+            
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
         
         // Handle card reading
         function handleCardReading(cardData) {
@@ -130,6 +179,8 @@
             const notesInput = document.getElementById('id_notes');
             const amount = parseFloat(amountInput.value);
             const notes = notesInput.value;
+            
+            addLogMessage(`Card detected: ${cardData.serialNumber}`);
             
             // Process payment
             processPayment(cardData, amount, notes);
@@ -140,6 +191,8 @@
             // Show loading state
             paymentResult.innerHTML = '<p class="text-blue-600">Processing payment...</p>';
             paymentResultContainer.classList.remove('hidden');
+            
+            addLogMessage(`Processing payment of ₹${amount}...`);
             
             // Send payment request to server
             window.paymentCardManager.sendCardData(cardData, 'payment', {
@@ -160,8 +213,16 @@
                     </div>
                 `;
                 
+                addLogMessage(`Payment successful! Amount: ₹${response.amount}, New Balance: ₹${response.new_balance}`);
+                
                 // Hide NFC reader
                 nfcReaderContainer.classList.add('hidden');
+                
+                // Stop NFC reader
+                if (window.paymentNfcReader) {
+                    window.paymentNfcReader.stopReading();
+                    addLogMessage('NFC reader stopped.');
+                }
                 
                 // Play success sound
                 playSound('success');
@@ -175,6 +236,8 @@
                     </div>
                 `;
                 
+                addLogMessage(`Payment failed: ${error.message || 'An error occurred while processing the payment.'}`, 'error');
+                
                 // Play error sound
                 playSound('error');
             });
@@ -183,21 +246,24 @@
         // Handle error
         function handleError(error) {
             console.error('NFC Error:', error);
+            addLogMessage(`NFC Error: ${error.message || error}`, 'error');
         }
         
         // Handle success
         function handleSuccess(message) {
             console.log('NFC Success:', message);
+            addLogMessage(message);
         }
         
         // Handle not supported
         function handleNotSupported() {
             console.warn('NFC not supported');
+            addLogMessage('NFC is not supported on this device/browser. You can use the "Simulate Card" button for testing.', 'error');
             
             // Show message
-            const nfcReader = document.getElementById('nfc-reader');
-            if (nfcReader) {
-                nfcReader.innerHTML = `
+            const nfcReaderElement = document.getElementById('nfc-reader');
+            if (nfcReaderElement) {
+                nfcReaderElement.innerHTML = `
                     <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
                         <p class="font-bold">NFC Not Supported</p>
                         <p>Your browser does not support NFC. Please use a compatible browser or device.</p>
