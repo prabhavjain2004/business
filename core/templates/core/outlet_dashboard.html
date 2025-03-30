@@ -60,33 +60,80 @@
                 </div>
             </div>
 
-            <!-- Card Operations Card -->
+            <!-- Payment Operations Card -->
             <div class="bg-blue-50 p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-semibold text-blue-600 mb-4 text-center">Card Operations</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <a href="{% url 'issue_card' %}" class="bg-green-600 text-white py-4 px-3 rounded-lg text-center font-semibold hover:bg-green-700 transition-colors duration-200 flex flex-col items-center justify-center">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4 text-center">Payment Operations</h2>
+                <div class="grid grid-cols-1 gap-3">
+                    <a href="{% url 'payment' %}" class="bg-red-600 text-white py-4 px-3 rounded-lg text-center font-semibold hover:bg-red-700 transition-colors duration-200 flex flex-col items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
                         </svg>
-                        <span class="text-sm sm:text-base">Issue New Card</span>
-                    </a>
-                    
-                    <a href="{% url 'top_up' %}" class="bg-blue-600 text-white py-4 px-3 rounded-lg text-center font-semibold hover:bg-blue-700 transition-colors duration-200 flex flex-col items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span class="text-sm sm:text-base">Top-Up Card</span>
-                    </a>
-                    
-                    <a href="{% url 'balance_inquiry' %}" class="bg-purple-600 text-white py-4 px-3 rounded-lg text-center font-semibold hover:bg-purple-700 transition-colors duration-200 flex flex-col items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <span class="text-sm sm:text-base">Balance Inquiry</span>
+                        <span class="text-sm sm:text-base">Accept Payment</span>
                     </a>
                 </div>
             </div>
 
+            <!-- Sales Summary Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Sales Summary</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-gray-600">
+                        <p class="text-lg font-medium">Total Sales</p>
+                        <p class="text-3xl font-bold text-green-600">₹{{ total_sales }}</p>
+                    </div>
+                    <a href="{% url 'transactions' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        View All Transactions
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions Card -->
+            <div class="bg-blue-50 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">Recent Transactions</h2>
+                {% if transactions %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Date</th>
+                                    <th class="py-3 px-6 text-left">Card ID</th>
+                                    <th class="py-3 px-6 text-right">Amount</th>
+                                    <th class="py-3 px-6 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm">
+                                {% for transaction in transactions %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">
+                                            {{ transaction.timestamp|date:"M d, Y H:i" }}
+                                        </td>
+                                        <td class="py-3 px-6 text-left">
+                                            {{ transaction.card_identifier|truncatechars:12 }}
+                                        </td>
+                                        <td class="py-3 px-6 text-right">
+                                            ₹{{ transaction.amount }}
+                                        </td>
+                                        <td class="py-3 px-6 text-center">
+                                            {% if transaction.status == 'completed' %}
+                                                <span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">Completed</span>
+                                            {% elif transaction.status == 'failed' %}
+                                                <span class="bg-red-200 text-red-700 py-1 px-3 rounded-full text-xs">Failed</span>
+                                            {% elif transaction.status == 'pending' %}
+                                                <span class="bg-yellow-200 text-yellow-700 py-1 px-3 rounded-full text-xs">Pending</span>
+                                            {% else %}
+                                                <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">{{ transaction.status|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">No transactions yet.</p>
+                {% endif %}
+            </div>
+            
             <!-- Recent Activity Card -->
             <div class="bg-blue-50 p-6 rounded-lg shadow-md">
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Recent Activity</h2>

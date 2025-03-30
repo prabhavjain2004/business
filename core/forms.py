@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Profile, Outlet, NFCCard, NFCLog
+from .models import Profile, Outlet, NFCCard, NFCLog, Transaction
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
@@ -52,4 +52,13 @@ class NFCLogForm(forms.ModelForm):
         fields = ['card_identifier', 'action', 'notes']
         widgets = {
             'card_identifier': forms.TextInput(attrs={'readonly': 'readonly'}),
+        }
+
+class TransactionForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = ['amount', 'notes']
+        widgets = {
+            'amount': forms.NumberInput(attrs={'step': '0.01', 'min': '0.01'}),
+            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Optional notes about this transaction'}),
         }

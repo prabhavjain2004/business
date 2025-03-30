@@ -5,6 +5,7 @@ from django.dispatch import receiver
 import uuid
 import random
 import string
+from decimal import Decimal
 # User type choices
 USER_TYPE_CHOICES = (
     ('admin', 'Admin'),
@@ -92,3 +93,48 @@ class NFCLog(models.Model):
     
     def __str__(self):
         return f"{self.card_identifier} at {self.timestamp}"
+
+class Transaction(models.Model):
+    """Model for storing payment transactions"""
+    TRANSACTION_STATUS_CHOICES = (
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('pending', 'Pending'),
+        ('refunded', 'Refunded'),
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    card = models.ForeignKey(NFCCard, on_delete=models.SET_NULL, null=True, blank=True, 
+                            related_name='transactions', help_text="NFC card used for the transaction")
+    card_identifier = models.CharField(max_length=255, help_text="Card ID at the time of transaction")
+    outlet = models.ForeignKey(Outlet, on_delete=models.SET_NULL, null=True, blank=True, 
+                              related_name='transactions', help_text="Outlet where the transaction occurred")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                            help_text="User who processed the transaction")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Transaction amount")
+    previous_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, 
+                                         help_text="Card balance before transaction")
+    new_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, 
+                                    help_text="Card balance after transaction")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=TRANSACTION_STATUS_CHOICES, default='pending')
+    notes = models.TextField(blank=True)
+    
+    def __str__(self):
+        return f"Transaction {self.id} - {self.amount} at {self.timestamp}"
+    
+    def save(self, *args, **kwargs):
+        # If this is a new transaction and the card exists
+        if not self.pk and self.card:
+            # Store the previous balance
+            self.previous_balance = self.card.balance
+            
+            # Update the card balance
+            self.card.balance = max(Decimal('0.00'), self.card.balance - self.amount)
+            self.new_balance = self.card.balance
+            self.card.save()
+            
+            # Set status to completed
+            self.status = 'completed'
+        
+        super().save(*args, **kwargs)

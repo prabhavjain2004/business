@@ -8,10 +8,12 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Sum
 import json
 import uuid
-from .forms import ProfileUpdateForm, OutletCreationForm, OutletUpdateForm, NFCCardForm, NFCLogForm
-from .models import Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog
+from decimal import Decimal
+from .forms import ProfileUpdateForm, OutletCreationForm, OutletUpdateForm, NFCCardForm, NFCLogForm, TransactionForm
+from .models import Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, Transaction
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True)
@@ -42,8 +44,19 @@ def dashboard(request):
         
         # If user is an outlet
         elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet':
-            # Redirect to outlet dashboard
-            return render(request, 'core/outlet_dashboard.html')
+            # Get outlet transactions
+            if hasattr(request.user, 'outlet'):
+                transactions = Transaction.objects.filter(outlet=request.user.outlet).order_by('-timestamp')[:10]
+                total_sales = Transaction.objects.filter(outlet=request.user.outlet, status='completed').aggregate(total=Sum('amount'))['total'] or 0
+            else:
+                transactions = []
+                total_sales = 0
+                
+            # Render outlet dashboard with transactions
+            return render(request, 'core/outlet_dashboard.html', {
+                'transactions': transactions,
+                'total_sales': total_sales
+            })
         
         # If user is neither admin nor outlet, show access denied
         else:
@@ -183,17 +196,58 @@ def custom_logout(request):
 @login_required
 def issue_card_view(request):
     """View for the issue card page"""
+    # Check if user is admin
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied. Only administrators can issue cards.')
+        return redirect('dashboard')
     return render(request, 'core/issue_card.html')
 
 @login_required
 def top_up_view(request):
     """View for the top-up page"""
+    # Check if user is admin
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied. Only administrators can top-up cards.')
+        return redirect('dashboard')
     return render(request, 'core/top_up.html')
 
 @login_required
 def balance_inquiry_view(request):
     """View for the balance inquiry page"""
+    # Check if user is admin
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied. Only administrators can check card balances.')
+        return redirect('dashboard')
     return render(request, 'core/balance_inquiry.html')
+
+@login_required
+def payment_view(request):
+    """View for the payment page"""
+    if request.method == 'POST':
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            # Process the payment
+            return redirect('payment_success')
+    else:
+        form = TransactionForm()
+    
+    return render(request, 'core/payment.html', {'form': form})
+
+@login_required
+def transactions_view(request):
+    """View for listing transactions"""
+    # Get transactions for the current outlet
+    if hasattr(request.user, 'outlet'):
+        transactions = Transaction.objects.filter(outlet=request.user.outlet).order_by('-timestamp')
+        total_sales = Transaction.objects.filter(outlet=request.user.outlet, status='completed').aggregate(total=Sum('amount'))['total'] or 0
+    else:
+        transactions = []
+        total_sales = 0
+    
+    return render(request, 'core/transactions.html', {
+        'transactions': transactions,
+        'total_sales': total_sales
+    })
 
 # NFC related views
 @login_required
@@ -326,7 +380,7 @@ def nfc_api(request):
                 return JsonResponse({'status': 'error', 'message': 'Card ID or Secure Key is required'}, status=400)
             
             # If this is a new card being registered
-            if card_id and not secure_key and action != 'balance_inquiry' and action != 'top_up':
+            if card_id and not secure_key and action != 'balance_inquiry' and action != 'top_up' and action != 'payment':
                 # Get or create the card with a new secure key
                 card, created = NFCCard.objects.get_or_create(
                     card_id=card_id,
@@ -381,10 +435,75 @@ def nfc_api(request):
             elif action == 'balance_inquiry':
                 action_description = f"Balance inquiry: Current balance is {card.balance}"
             
+            elif action == 'payment':
+                amount = Decimal(data.get('amount', 0))
+                notes = data.get('notes', '')
+                
+                # Check if card has sufficient balance
+                if card.balance < amount:
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': 'Insufficient balance',
+                        'balance': float(card.balance),
+                        'amount': float(amount)
+                    }, status=400)
+                
+                # Create transaction record
+                transaction = Transaction(
+                    card=card,
+                    card_identifier=card.card_id,
+                    amount=amount,
+                    notes=notes
+                )
+                
+                # If user is authenticated, add user and outlet info
+                if request.user.is_authenticated:
+                    transaction.user = request.user
+                    if hasattr(request.user, 'outlet'):
+                        transaction.outlet = request.user.outlet
+                
+                # Save transaction (this will update card balance in the save method)
+                transaction.save()
+                
+                action_description = f"Payment of {amount} processed. New balance: {card.balance}"
+                
+                # Add transaction info to response
+                response_data = {
+                    'status': 'success',
+                    'card_id': card.card_id,
+                    'secure_key': card.secure_key,
+                    'action': action,
+                    'transaction_id': str(transaction.id),
+                    'amount': float(amount),
+                    'previous_balance': float(transaction.previous_balance),
+                    'new_balance': float(transaction.new_balance),
+                    'timestamp': transaction.timestamp.isoformat()
+                }
+                
+                # Create log entry
+                log = NFCLog.objects.create(
+                    card=card,
+                    card_identifier=card.card_id,
+                    action=action_description,
+                    success=True,
+                    notes=f"Transaction ID: {transaction.id}"
+                )
+                
+                # If user is authenticated, add user and outlet info to log
+                if request.user.is_authenticated:
+                    log.user = request.user
+                    if hasattr(request.user, 'outlet'):
+                        log.outlet = request.user.outlet
+                    log.save()
+                
+                response_data['log_id'] = str(log.id)
+                
+                return JsonResponse(response_data)
+            
             else:
                 action_description = action
             
-            # Create log entry
+            # Create log entry (for non-payment actions)
             log = NFCLog.objects.create(
                 card=card,
                 card_identifier=card_id or card.card_id,  # Use card.card_id as fallback if card_id is None
