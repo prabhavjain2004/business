@@ -1,4 +1,263 @@
-{% extends 'base.html' %}
+```javascript
+// Initialize NFC Card Manager
+const cardManager = new NFCCardManager('/api/nfc/');
+
+// Get fallback and error modal elements
+const nfcFallbackMessage = document.getElementById('nfc-fallback-message');
+const nfcErrorModal = document.getElementById('nfc-error-modal');
+const nfcErrorTitle = document.getElementById('nfc-error-title');
+const nfcErrorMessage = document.getElementById('nfc-error-message');
+const nfcFallbackCloseBtn = document.getElementById('nfc-fallback-close-btn');
+const nfcErrorCloseBtn = document.getElementById('nfc-error-close-btn');
+
+// Add event listeners for fallback and error modals
+nfcFallbackCloseBtn.addEventListener('click', () => {
+  nfcFallbackMessage.classList.add('hidden');
+});
+
+nfcErrorCloseBtn.addEventListener('click', () => {
+  nfcErrorModal.classList.add('hidden');
+});
+
+// Initialize NFC Reader
+const nfcReader = new NFCReader({
+  onReading: handleNFCReading,
+  onError: handleNFCError,
+  onNotSupported: handleNFCNotSupported
+});
+
+// Current operation state
+let currentStep = 1;
+let scannedCardId = null;
+
+// Get step containers
+const step1 = document.getElementById('step-1');
+const step2 = document.getElementById('step-2');
+const step3 = document.getElementById('step-3');
+const step4 = document.getElementById('step-4');
+
+// Get status elements
+const scanStatus1 = document.getElementById('scan-status-1');
+const scanStatus3 = document.getElementById('scan-status-3');
+
+// Get form elements
+const customerForm = document.getElementById('customer-form');
+const customerName = document.getElementById('customer-name');
+const mobileNumber = document.getElementById('mobile-number');
+const totalAmount = document.getElementById('total-amount');
+const amountInput = document.getElementById('amount-input');
+
+// Get confirmation elements
+const confirmCustomerName = document.getElementById('confirm-customer-name');
+const confirmMobileNumber = document.getElementById('confirm-mobile-number');
+const confirmAmount = document.getElementById('confirm-amount');
+
+// Get buttons
+const nextBtn = document.getElementById('next-btn');
+const doneBtn = document.getElementById('done-btn');
+
+// Get activity log
+const activityLog = document.getElementById('activity-log');
+
+// Add event listeners for buttons
+nextBtn.addEventListener('click', goToStep3);
+doneBtn.addEventListener('click', resetProcess);
+
+// Add event listeners for denomination buttons
+const denominationBtns = document.querySelectorAll('.denomination-btn');
+denominationBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    // Toggle active state
+    btn.classList.toggle('bg-gray-200');
+    btn.classList.toggle('bg-blue-200');
+
+    // Update total
+    updateTotal();
+  });
+});
+
+// Start NFC reader
+nfcReader.startReading();
+addLogMessage('NFC reader started. Waiting for card...');
+
+// Function to handle NFC reading
+function handleNFCReading(cardData) {
+  const cardId = cardData.serialNumber;
+
+  if (currentStep === 1) {
+    // First scan for issue card
+    scannedCardId = cardId;
+    scanStatus1.textContent = `Card detected: ${cardId}`;
+    addLogMessage(`Card detected: ${cardId}`);
+
+    // Move to step 2 after a short delay
+    setTimeout(() => {
+      showStep(2);
+    }, 1000);
+  } else if (currentStep === 3) {
+    // Confirmation scan for issue card
+    if (cardId === scannedCardId) {
+      scanStatus3.textContent = 'Card confirmed! Processing...';
+      addLogMessage('Card confirmed! Processing...');
+
+      // Get form data
+      const name = customerName.value;
+      const mobile = mobileNumber.value;
+      const amount = amountInput.value;
+
+      // Send data to server
+      cardManager.sendCardData(
+        { serialNumber: cardId },
+        'issue_card',
+        {
+          customer_name: name,
+          mobile_number: mobile,
+          initial_balance: amount
+        }
+      )
+        .then((response) => {
+          // Move to success step
+          addLogMessage('Card issued successfully!');
+          showStep(4);
+        })
+        .catch((error) => {
+          scanStatus3.textContent = `Error: ${error.message}`;
+          addLogMessage(`Error: ${error.message}`, 'error');
+        });
+    } else {
+      scanStatus3.textContent = 'Error: Different card detected. Please use the same card.';
+      addLogMessage('Error: Different card detected. Please use the same card.', 'error');
+    }
+  }
+}
+
+// Function to handle NFC not supported
+function handleNFCNotSupported() {
+  console.warn('NFC is not supported on this device/browser');
+  addLogMessage('NFC is not supported on this device/browser', 'error');
+
+  // Show the fallback message
+  nfcFallbackMessage.classList.remove('hidden');
+}
+
+// Function to handle NFC errors
+function handleNFCError(error) {
+  console.error('NFC Error:', error);
+  addLogMessage(`NFC Error: ${error.message || error}`, 'error');
+
+  // Show the error modal
+  nfcErrorTitle.textContent = 'NFC Error';
+  nfcErrorMessage.textContent = error.message || error;
+  nfcErrorModal.classList.remove('hidden');
+}
+
+// Function to go to step 3
+function goToStep3() {
+  // Validate form
+  if (!customerName.value) {
+    alert('Please enter customer name');
+    return;
+  }
+
+  if (!mobileNumber.value) {
+    alert('Please enter mobile number');
+    return;
+  }
+
+  if (parseInt(amountInput.value) <= 0) {
+    alert('Please select a loading amount');
+    return;
+  }
+
+  // Update confirmation info
+  confirmCustomerName.textContent = customerName.value;
+  confirmMobileNumber.textContent = mobileNumber.value;
+  confirmAmount.textContent = totalAmount.textContent;
+
+  // Go to step 3
+  showStep(3);
+  addLogMessage('Please tap the card again to confirm issuance');
+}
+
+// Function to reset the process
+function resetProcess() {
+  // Reset form
+  customerName.value = '';
+  mobileNumber.value = '';
+  resetDenominationButtons();
+  totalAmount.textContent = '₹0';
+  amountInput.value = 0;
+
+  // Reset state
+  currentStep = 1;
+  scannedCardId = null;
+
+  // Show step 1
+  showStep(1);
+  addLogMessage('Process reset. Waiting for card...');
+}
+
+// Function to show step
+function showStep(step) {
+  currentStep = step;
+
+  // Hide all steps
+  step1.classList.add('hidden');
+  step2.classList.add('hidden');
+  step3.classList.add('hidden');
+  step4.classList.add('hidden');
+
+  // Show requested step
+  if (step === 1) {
+    step1.classList.remove('hidden');
+  } else if (step === 2) {
+    step2.classList.remove('hidden');
+  } else if (step === 3) {
+    step3.classList.remove('hidden');
+  } else if (step === 4) {
+    step4.classList.remove('hidden');
+  }
+}
+
+// Function to update total amount
+function updateTotal() {
+  let total = 0;
+  const activeBtns = document.querySelectorAll('.denomination-btn.bg-blue-200');
+
+  activeBtns.forEach((btn) => {
+    total += parseInt(btn.getAttribute('data-value'));
+  });
+
+  totalAmount.textContent = `₹${total}`;
+  amountInput.value = total;
+}
+
+// Function to reset denomination buttons
+function resetDenominationButtons() {
+  const denominationBtns = document.querySelectorAll('.denomination-btn');
+  denominationBtns.forEach((btn) => {
+    btn.classList.remove('bg-blue-200');
+    btn.classList.add('bg-gray-200');
+  });
+}
+
+// Function to add a message to the log
+function addLogMessage(message, type = 'info') {
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntry = document.createElement('p');
+
+  logEntry.textContent = `[${timestamp}] ${message}`;
+
+  if (type === 'error') {
+    logEntry.classList.add('text-red-500');
+  } else {
+    logEntry.classList.add('text-gray-700');
+  }
+
+  activityLog.appendChild(logEntry);
+  activityLog.scrollTop = activityLog.scrollHeight;
+}
+```{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Issue Card - My Project{% endblock %}

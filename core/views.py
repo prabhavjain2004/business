@@ -371,7 +371,7 @@ def nfc_api(request):
             # Create log entry
             log = NFCLog.objects.create(
                 card=card,
-                card_identifier=card_id,
+                card_identifier=card_id or card.card_id,  # Use card.card_id as fallback if card_id is None
                 action=action_description,
                 success=True
             )
