@@ -13,50 +13,42 @@
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Payment Instructions</h2>
                 <ol class="list-decimal list-inside space-y-2 text-gray-600 mb-4">
                     <li>Enter the payment amount below</li>
-                    <li>Click "Prepare Payment" to continue</li>
-                    <li>Scan the customer's NFC card when prompted</li>
-                    <li>Confirm the payment details</li>
+                    <li>Enter the card ID</li>
+                    <li>Click "Process Payment" to complete the transaction</li>
                 </ol>
-                <p class="text-sm text-gray-500">Note: Make sure the NFC reader is active before scanning the card.</p>
+                <p class="text-sm text-gray-500">Note: The amount will be deducted from the card balance.</p>
             </div>
             
             <div class="bg-blue-50 p-6 rounded-lg shadow-md">
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Payment Details</h2>
                 
-                <form method="post" id="payment-form">
+                <form id="payment-form">
                     {% csrf_token %}
                     
                     <div class="mb-4">
                         <label for="id_amount" class="block text-gray-700 font-medium mb-2">Amount (₹)</label>
-                        {{ form.amount }}
-                        {% if form.amount.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.amount.errors.0 }}</p>
-                        {% endif %}
+                        <input type="number" id="id_amount" name="amount" step="0.01" min="0.01" class="w-full p-2 border border-gray-300 rounded-lg" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="id_card_id" class="block text-gray-700 font-medium mb-2">Card ID</label>
+                        <input type="text" id="id_card_id" name="card_id" class="w-full p-2 border border-gray-300 rounded-lg" required>
                     </div>
                     
                     <div class="mb-4">
                         <label for="id_notes" class="block text-gray-700 font-medium mb-2">Notes (Optional)</label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <p class="text-red-500 text-sm mt-1">{{ form.notes.errors.0 }}</p>
-                        {% endif %}
+                        <textarea id="id_notes" name="notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Optional notes about this transaction"></textarea>
                     </div>
                     
                     <div class="flex justify-between items-center mt-6">
                         <a href="{% url 'dashboard' %}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200">
                             Cancel
                         </a>
-                        <button type="button" id="prepare-payment-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
-                            Prepare Payment
+                        <button type="button" id="process-payment-btn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
+                            Process Payment
                         </button>
                     </div>
                 </form>
-            </div>
-            
-            <!-- NFC Reader Container (hidden initially) -->
-            <div id="nfc-reader-container" class="bg-blue-50 p-6 rounded-lg shadow-md mt-6 hidden">
-                <h2 class="text-xl font-semibold text-blue-600 mb-4">Scan NFC Card</h2>
-                <div id="nfc-reader"></div>
             </div>
             
             <!-- Payment Result Container (hidden initially) -->
@@ -81,135 +73,47 @@
 
 {% block extra_js %}
 {{ block.super }}
-<script src="{% static 'core/js/nfc.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const paymentForm = document.getElementById('payment-form');
-        const preparePaymentBtn = document.getElementById('prepare-payment-btn');
-        const nfcReaderContainer = document.getElementById('nfc-reader-container');
+        const processPaymentBtn = document.getElementById('process-payment-btn');
         const paymentResultContainer = document.getElementById('payment-result-container');
         const paymentResult = document.getElementById('payment-result');
         
-        // Initialize NFC reader when the page loads
-        let nfcReader = null;
-        let cardManager = null;
-        
-        if (typeof NFCReader !== 'undefined' && typeof NFCCardManager !== 'undefined') {
-            nfcReader = new NFCReader({
-                onReading: handleCardReading,
-                onError: handleError,
-                onSuccess: handleSuccess,
-                onNotSupported: handleNotSupported
-            });
-            
-            cardManager = new NFCCardManager('/api/nfc/');
-        }
-        
-        // Add activity log to the NFC reader container
-        const activityLogHtml = `
-            <div class="mt-4">
-                <h3 class="text-lg font-medium text-blue-600 mb-2">Activity Log</h3>
-                <div id="activity-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm">
-                    <p class="text-gray-500">NFC reader initialized. Click "Prepare Payment" to start.</p>
-                </div>
-            </div>
-        `;
-        
-        // Add the activity log to the NFC reader container
-        const nfcReaderElement = document.getElementById('nfc-reader');
-        if (nfcReaderElement) {
-            nfcReaderElement.insertAdjacentHTML('afterend', activityLogHtml);
-        }
-        
-        const activityLog = document.getElementById('activity-log');
-        
-        // Handle prepare payment button click
-        preparePaymentBtn.addEventListener('click', function() {
+        // Handle process payment button click
+        processPaymentBtn.addEventListener('click', function() {
             const amountInput = document.getElementById('id_amount');
+            const cardIdInput = document.getElementById('id_card_id');
+            const notesInput = document.getElementById('id_notes');
+            
             const amount = parseFloat(amountInput.value);
+            const cardId = cardIdInput.value.trim();
+            const notes = notesInput.value;
             
             if (isNaN(amount) || amount <= 0) {
                 alert('Please enter a valid amount greater than 0.');
                 return;
             }
             
-            // Show NFC reader
-            nfcReaderContainer.classList.remove('hidden');
-            
-            // Scroll to NFC reader
-            nfcReaderContainer.scrollIntoView({ behavior: 'smooth' });
-            
-            // Initialize UI handler if not already initialized
-            if (!window.paymentUiHandler && nfcReader) {
-                // Initialize UI handler
-                const uiHandler = new NFCUIHandler('nfc-reader', nfcReader, cardManager);
-                
-                // Store references for later use
-                window.paymentNfcReader = nfcReader;
-                window.paymentCardManager = cardManager;
-                window.paymentUiHandler = uiHandler;
-                
-                // Start NFC reader
-                window.paymentNfcReader.startReading();
-                addLogMessage('NFC reader started. Waiting for card...');
-            }
-        });
-        
-        // Function to add a message to the log
-        function addLogMessage(message, type = 'info') {
-            if (!activityLog) return;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('p');
-            
-            logEntry.textContent = `[${timestamp}] ${message}`;
-            
-            if (type === 'error') {
-                logEntry.classList.add('text-red-500');
-            } else {
-                logEntry.classList.add('text-gray-700');
+            if (!cardId) {
+                alert('Please enter a valid Card ID.');
+                return;
             }
             
-            activityLog.appendChild(logEntry);
-            activityLog.scrollTop = activityLog.scrollHeight;
-        }
-        
-        // Handle card reading
-        function handleCardReading(cardData) {
-            const amountInput = document.getElementById('id_amount');
-            const notesInput = document.getElementById('id_notes');
-            const amount = parseFloat(amountInput.value);
-            const notes = notesInput.value;
-            
-            addLogMessage(`Card detected: ${cardData.serialNumber}`);
-            
-            // Process payment
-            processPayment(cardData, amount, notes);
-        }
-        
-        // Process payment
-        function processPayment(cardData, amount, notes) {
             // Show loading state
             paymentResult.innerHTML = '<p class="text-blue-600">Processing payment...</p>';
             paymentResultContainer.classList.remove('hidden');
             
-            addLogMessage(`Processing payment of ₹${amount}...`);
-            
-            // Add X-Requested-With header to identify as AJAX request
-            const headers = {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            };
-            
             // Send payment request to server
             fetch('/api/nfc/', {
                 method: 'POST',
-                headers: headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
                 body: JSON.stringify({
                     action: 'payment',
-                    card_id: cardData.serialNumber,
-                    secure_key: cardData.secureKey,
+                    card_id: cardId,
                     amount: amount,
                     notes: notes
                 })
@@ -236,17 +140,6 @@
                     </div>
                 `;
                 
-                addLogMessage(`Payment successful! Amount: ₹${response.amount}, New Balance: ₹${response.new_balance}`);
-                
-                // Hide NFC reader
-                nfcReaderContainer.classList.add('hidden');
-                
-                // Stop NFC reader
-                if (window.paymentNfcReader) {
-                    window.paymentNfcReader.stopReading();
-                    addLogMessage('NFC reader stopped.');
-                }
-                
                 // Play success sound
                 playSound('success');
             })
@@ -259,42 +152,10 @@
                     </div>
                 `;
                 
-                addLogMessage(`Payment failed: ${error.message || 'An error occurred while processing the payment.'}`, 'error');
-                
                 // Play error sound
                 playSound('error');
             });
-        }
-        
-        // Handle error
-        function handleError(error) {
-            console.error('NFC Error:', error);
-            addLogMessage(`NFC Error: ${error.message || error}`, 'error');
-        }
-        
-        // Handle success
-        function handleSuccess(message) {
-            console.log('NFC Success:', message);
-            addLogMessage(message);
-        }
-        
-        // Handle not supported
-        function handleNotSupported() {
-            console.warn('NFC not supported');
-            addLogMessage('NFC is not supported on this device/browser. You can use the "Simulate Card" button for testing.', 'error');
-            
-            // Show message
-            const nfcReaderElement = document.getElementById('nfc-reader');
-            if (nfcReaderElement) {
-                nfcReaderElement.innerHTML = `
-                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-                        <p class="font-bold">NFC Not Supported</p>
-                        <p>Your browser does not support NFC. Please use a compatible browser or device.</p>
-                        <p class="mt-2">You can use the "Simulate Card" button below for testing.</p>
-                    </div>
-                `;
-            }
-        }
+        });
         
         // Get CSRF token from cookie
         function getCsrfToken() {
@@ -337,3 +198,4 @@
     });
 </script>
 {% endblock %}
+
