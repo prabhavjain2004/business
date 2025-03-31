@@ -55,6 +55,15 @@
                                     <input type="hidden" id="amount-input" name="amount" value="0">
                                 </div>
                             </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Payment Method</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" id="payment-cash" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg active" data-value="cash">Cash</button>
+                                    <button type="button" id="payment-upi" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="upi">UPI</button>
+                                </div>
+                                <input type="hidden" id="payment-method-input" name="payment_method" value="cash">
+                            </div>
                         </form>
                         <div class="flex justify-end mt-4">
                             <button id="next-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
@@ -257,6 +266,29 @@
                 });
             });
             
+            // Add event listeners for payment method buttons
+            const paymentMethodBtns = document.querySelectorAll('.payment-method-btn');
+            const paymentMethodInput = document.getElementById('payment-method-input');
+            
+            paymentMethodBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    paymentMethodBtns.forEach(b => {
+                        b.classList.remove('bg-blue-200');
+                        b.classList.add('bg-gray-200');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.remove('bg-gray-200');
+                    this.classList.add('bg-blue-200');
+                    
+                    // Update payment method input
+                    paymentMethodInput.value = this.getAttribute('data-value');
+                    
+                    addLogMessage(`Payment method set to: ${this.getAttribute('data-value')}`);
+                });
+            });
+            
             // Start NFC reader
             nfcReader.startReading();
             addLogMessage('NFC reader started. Waiting for card...');
@@ -285,6 +317,7 @@
                         const name = customerName.value;
                         const mobile = mobileNumber.value;
                         const amount = amountInput.value;
+                        const paymentMethod = document.getElementById('payment-method-input').value;
                         
                         // Send data to server
                         cardManager.sendCardData(
@@ -293,7 +326,8 @@
                             {
                                 customer_name: name,
                                 mobile_number: mobile,
-                                initial_balance: amount
+                                initial_balance: amount,
+                                payment_method: paymentMethod
                             }
                         ).then(response => {
                             // Move to success step

@@ -410,6 +410,7 @@ def nfc_api(request):
                 customer_name = data.get('customer_name', '')
                 mobile_number = data.get('mobile_number', '')
                 initial_balance = data.get('initial_balance', 0)
+                payment_method = data.get('payment_method', 'cash')  # Default to cash if not provided
                 
                 # Update card with customer info and balance
                 card.customer_name = customer_name
@@ -427,10 +428,30 @@ def nfc_api(request):
                 
                 card.save()
                 
-                action_description = f"Card issued to {customer_name} with initial balance {initial_balance}"
+                # Create transaction record for the card issuance
+                transaction = Transaction.objects.create(
+                    card=card,
+                    card_identifier=card.card_id,
+                    amount=initial_balance,
+                    payment_method=payment_method,
+                    previous_balance=0,
+                    new_balance=initial_balance,
+                    status='completed',
+                    notes='Card issuance transaction'
+                )
+                
+                # If user is authenticated, add user and outlet info
+                if request.user.is_authenticated:
+                    transaction.user = request.user
+                    if hasattr(request.user, 'outlet'):
+                        transaction.outlet = request.user.outlet
+                    transaction.save()
+                
+                action_description = f"Card issued to {customer_name} with initial balance {initial_balance} (Payment: {payment_method})"
             
             elif action == 'top_up':
                 amount = data.get('amount', 0)
+                payment_method = data.get('payment_method', 'cash')  # Default to cash if not provided
                 
                 # Retrieve current balance
                 current_balance = float(card.balance)
@@ -441,10 +462,29 @@ def nfc_api(request):
                 card.balance = new_balance
                 card.save()
                 
+                # Create transaction record for the top-up
+                transaction = Transaction.objects.create(
+                    card=card,
+                    card_identifier=card.card_id,
+                    amount=amount,
+                    payment_method=payment_method,
+                    previous_balance=current_balance,
+                    new_balance=new_balance,
+                    status='completed',
+                    notes='Top-up transaction'
+                )
+                
+                # If user is authenticated, add user and outlet info
+                if request.user.is_authenticated:
+                    transaction.user = request.user
+                    if hasattr(request.user, 'outlet'):
+                        transaction.outlet = request.user.outlet
+                    transaction.save()
+                
                 # Log the updated balance
                 print(f"Updated balance for card {card.card_id}: {current_balance} + {amount} = {new_balance}")
                 
-                action_description = f"Top-up of {amount} added to card"
+                action_description = f"Top-up of {amount} added to card (Payment: {payment_method})"
             
             elif action == 'balance_inquiry':
                 action_description = f"Balance inquiry: Current balance is {card.balance}"

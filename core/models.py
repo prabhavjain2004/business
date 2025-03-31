@@ -120,6 +120,11 @@ class Transaction(models.Model):
         ('refunded', 'Refunded'),
     )
     
+    PAYMENT_METHOD_CHOICES = (
+        ('cash', 'Cash'),
+        ('upi', 'UPI'),
+    )
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     card = models.ForeignKey(NFCCard, on_delete=models.SET_NULL, null=True, blank=True, 
                             related_name='transactions', help_text="NFC card used for the transaction")
@@ -129,6 +134,8 @@ class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
                             help_text="User who processed the transaction")
     amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Transaction amount")
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='cash',
+                                    help_text="Method used for payment (Cash or UPI)")
     previous_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, 
                                          help_text="Card balance before transaction")
     new_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, 
