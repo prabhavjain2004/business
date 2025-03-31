@@ -1,0 +1,49 @@
+/* Custom mobile styles for the NFC Payment System */
+
+/* General styles */
+body {
+    font-family: 'Arial', sans-serif;
+}
+
+/* Ensure buttons are large enough for touch */
+button {
+    padding: 12px 20px;
+    font-size: 16px;
+}
+
+/* Adjust text sizes for mobile */
+h1 {
+    font-size: 24px; /* Adjusted for mobile */
+}
+
+h2 {
+    font-size: 20px; /* Adjusted for mobile */
+}
+
+h3 {
+    font-size: 18px; /* Adjusted for mobile */
+}
+
+/* Ensure containers have appropriate padding */
+.container {
+    padding: 16px; /* Adjusted for mobile */
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    h1 {
+        font-size: 20px; /* Further adjust for smaller screens */
+    }
+
+    h2 {
+        font-size: 18px; /* Further adjust for smaller screens */
+    }
+
+    h3 {
+        font-size: 16px; /* Further adjust for smaller screens */
+    }
+
+    .bg-blue-600 {
+        padding: 10px; /* Adjust padding for mobile */
+    }
+}
