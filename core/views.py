@@ -486,8 +486,26 @@ def nfc_api(request):
                         except (Session.DoesNotExist, User.DoesNotExist):
                             pass
                 
+                # Store the previous balance
+                previous_balance = card.balance
+                
                 # Save transaction (this will update card balance in the save method)
                 transaction.save()
+                
+                # Ensure the status is set to completed and save again
+                transaction.status = 'completed'
+                transaction.save()
+                
+                # Verify the balance was updated correctly
+                if card.balance != previous_balance - amount:
+                    # If not, update it manually
+                    card.balance = max(Decimal('0.00'), previous_balance - amount)
+                    card.save()
+                    
+                    # Update transaction with correct balances
+                    transaction.previous_balance = previous_balance
+                    transaction.new_balance = card.balance
+                    transaction.save()
                 
                 action_description = f"Payment of {amount} processed. New balance: {card.balance}"
                 

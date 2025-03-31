@@ -363,6 +363,9 @@
                         finalBalance.textContent = `₹${response.new_balance}`;
                         transactionTime.textContent = new Date(response.timestamp).toLocaleString();
                         
+                        // Play success sound
+                        playSound('success');
+                        
                         // Move to success step
                         addLogMessage(`Payment successful! Amount: ₹${amount}`);
                         showStep(4);
@@ -370,6 +373,9 @@
                     .catch(error => {
                         scanStatus3.textContent = `Error: ${error.message}`;
                         addLogMessage(`Error: ${error.message}`, 'error');
+                        
+                        // Play error sound
+                        playSound('error');
                         
                         // Show error modal
                         nfcErrorTitle.textContent = 'Payment Error';
@@ -508,6 +514,26 @@
             }
             
             return cookieValue;
+        }
+        
+        // Function to play sound
+        function playSound(type) {
+            const audio = new Audio();
+            
+            switch (type) {
+                case 'success':
+                    audio.src = '/static/core/sounds/beep.mp3';
+                    break;
+                case 'error':
+                    audio.src = '/static/core/sounds/beep.mp3';
+                    break;
+                default:
+                    audio.src = '/static/core/sounds/beep.mp3';
+            }
+            
+            audio.play().catch(error => {
+                console.warn('Could not play sound:', error);
+            });
         }
         
         // Function to add a message to the log
