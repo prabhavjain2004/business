@@ -11,6 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum
 import json
 import uuid
+import random
+import string
 from decimal import Decimal
 from .forms import ProfileUpdateForm, OutletCreationForm, OutletUpdateForm, NFCCardForm, NFCLogForm, TransactionForm
 from .models import Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, Transaction
@@ -413,6 +415,16 @@ def nfc_api(request):
                 card.customer_name = customer_name
                 card.mobile_number = mobile_number
                 card.balance = initial_balance
+                
+                # Ensure the card has a secure_key (should be handled by pre_save signal, but double-check)
+                if not card.secure_key:
+                    # Generate a unique secure key
+                    while True:
+                        secure_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
+                        if not NFCCard.objects.filter(secure_key=secure_key).exists():
+                            card.secure_key = secure_key
+                            break
+                
                 card.save()
                 
                 action_description = f"Card issued to {customer_name} with initial balance {initial_balance}"

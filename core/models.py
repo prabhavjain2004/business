@@ -78,6 +78,23 @@ class NFCCard(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.card_id})" if self.name else self.card_id
+    
+    def generate_secure_key(self):
+        """Generate a random 16-character alphanumeric secure key"""
+        chars = string.ascii_letters + string.digits
+        return ''.join(random.choice(chars) for _ in range(16))
+
+# Signal to generate secure_key for NFCCard
+@receiver(pre_save, sender=NFCCard)
+def ensure_secure_key(sender, instance, **kwargs):
+    """Ensure NFCCard has a secure_key before saving"""
+    if not instance.secure_key:
+        # Generate a unique secure key
+        while True:
+            secure_key = instance.generate_secure_key()
+            if not NFCCard.objects.filter(secure_key=secure_key).exists():
+                instance.secure_key = secure_key
+                break
 
 class NFCLog(models.Model):
     """Model for logging NFC card scans"""
