@@ -46,10 +46,13 @@
                                     <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
                                     <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
                                 </div>
-                                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg mb-2">
                                     <span class="font-semibold">Total Amount:</span>
                                     <span id="total-amount" class="text-lg font-bold">₹0</span>
                                     <input type="hidden" id="amount-input" name="amount" value="0">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" id="reset-amount-btn" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm">Reset Amount</button>
                                 </div>
                             </div>
                             
@@ -256,15 +259,32 @@
             
             // Add event listeners for denomination buttons
             const denominationBtns = document.querySelectorAll('.denomination-btn');
+            const resetAmountBtn = document.getElementById('reset-amount-btn');
+            
             denominationBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    // Toggle active state
-                    this.classList.toggle('bg-gray-200');
-                    this.classList.toggle('bg-blue-200');
+                    // Add the value to the total (don't toggle, just add)
+                    const value = parseInt(this.getAttribute('data-value'));
                     
-                    // Update total
-                    updateTotal();
+                    // Highlight the button temporarily to show it was clicked
+                    this.classList.remove('bg-gray-200');
+                    this.classList.add('bg-blue-200');
+                    
+                    // After a short delay, revert the button to its original state
+                    setTimeout(() => {
+                        this.classList.remove('bg-blue-200');
+                        this.classList.add('bg-gray-200');
+                    }, 200);
+                    
+                    // Update total by adding the clicked value
+                    addToTotal(value);
                 });
+            });
+            
+            // Add event listener for reset button
+            resetAmountBtn.addEventListener('click', function() {
+                resetAmount();
+                addLogMessage('Amount reset to ₹0');
             });
             
             // Add event listeners for payment method buttons
@@ -434,17 +454,21 @@
                 }
             }
             
-            // Function to update total amount
-            function updateTotal() {
-                let total = 0;
-                const activeBtns = document.querySelectorAll('.denomination-btn.bg-blue-200');
+            // Function to add to the total amount
+            function addToTotal(value) {
+                let currentTotal = parseInt(amountInput.value) || 0;
+                let newTotal = currentTotal + value;
                 
-                activeBtns.forEach(btn => {
-                    total += parseInt(btn.getAttribute('data-value'));
-                });
+                totalAmount.textContent = `₹${newTotal}`;
+                amountInput.value = newTotal;
                 
-                totalAmount.textContent = `₹${total}`;
-                amountInput.value = total;
+                addLogMessage(`Added ₹${value}. Total: ₹${newTotal}`);
+            }
+            
+            // Function to reset the amount
+            function resetAmount() {
+                totalAmount.textContent = '₹0';
+                amountInput.value = 0;
             }
             
             // Function to reset denomination buttons
