@@ -38,5 +38,3 @@ urlpatterns = [
     path('cards/payment/', views.payment_view, name='payment'),
     path('transactions/', views.transactions_view, name='transactions'),
 ]
-
-
