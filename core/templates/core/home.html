@@ -1,40 +1,158 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - My Project{% endblock %}
+{% block title %}Home - NFC Payment System{% endblock %}
 
 {% block content %}
-    <div class="min-h-screen bg-white">
-        <div class="max-w-4xl mx-auto py-12 px-4">
-            <!-- Hero Section -->
-            <div class="text-center mb-16">
-                <h1 class="text-4xl font-bold text-blue-600 mb-4">Welcome to NFC Payment System</h1>
-                <p class="text-gray-600 text-lg">Your gateway to modern payment solutions</p>
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+        <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl mb-6 animate-fade-in">
+                    Next Generation NFC Payment System
+                </h1>
+                <p class="max-w-xl mx-auto text-xl text-primary-100 animate-slide-up">
+                    Secure, fast, and convenient payments for modern businesses
+                </p>
+                <div class="mt-10 animate-slide-up">
+                    <a href="{% url 'login' %}" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 shadow-lg hover:shadow-xl transition-all duration-200">
+                        Get Started
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    Powerful Features
+                </h2>
+                <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                    Everything you need for seamless NFC payments
+                </p>
             </div>
 
-            <!-- Auth Button -->
-            <div class="flex justify-center mb-16">
-                <a href="{% url 'login' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                    Login
-                </a>
-            </div>
-
-            <!-- Cards Section -->
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="bg-blue-50 p-8 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-semibold text-blue-600 mb-4">About Us</h2>
-                    <p class="text-gray-600 leading-relaxed">
-                        We specialize in creating innovative cashless payments solutions that drive business growth. Our team of experts is dedicated to delivering high-quality solutions tailored to your needs.
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-100 dashboard-card">
+                    <div class="bg-primary-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Secure Transactions</h3>
+                    <p class="text-gray-600">
+                        Advanced encryption and secure key management ensure your payments are always protected.
                     </p>
                 </div>
 
-                <div class="bg-blue-50 p-8 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-semibold text-blue-600 mb-4">Our Services</h2>
-                    <ul class="list-disc list-inside text-gray-600 space-y-2">
-                        <li>NFC Payments</li>
-                        <li>Custom printing and Marketing</li>
-                        <li>Cashless Payments</li>
-                        <li>Data Analytics</li>
-                    </ul>
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-100 dashboard-card">
+                    <div class="bg-secondary-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-secondary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Lightning Fast</h3>
+                    <p class="text-gray-600">
+                        Process payments in milliseconds with our optimized NFC technology and streamlined workflows.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-gray-100 dashboard-card">
+                    <div class="bg-green-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Detailed Analytics</h3>
+                    <p class="text-gray-600">
+                        Gain valuable insights with comprehensive transaction data and customizable reports.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl mb-6">
+                        About Our System
+                    </h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        We specialize in creating innovative cashless payment solutions that drive business growth. Our team of experts is dedicated to delivering high-quality solutions tailored to your needs.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-8">
+                        With our NFC Payment System, you can streamline operations, reduce cash handling, and provide a seamless experience for your customers.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-gray-700">Easy to implement</span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-gray-700">24/7 Support</span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-gray-700">Regular updates</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 lg:mt-0">
+                    <div class="nfc-card mx-auto max-w-sm">
+                        <div class="nfc-card-chip"></div>
+                        <div class="mt-4 mb-2">
+                            <!-- <div class="text-xs text-white opacity-80">CARDHOLDER</div>
+                            <div class="text-lg font-medium">JOHN DOE</div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-xs text-white opacity-80">BALANCE</div>
+                            <div class="text-lg font-medium">₹5,000.00</div>
+                        </div>
+                        <div class="mt-6 flex justify-between items-end">
+                            <div>
+                                <div class="text-xs text-white opacity-80">CARD ID</div>
+                                <div class="text-sm">NFC-1234-5678</div>
+                            </div> -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+            <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                <span class="block">Ready to get started?</span>
+                <span class="block text-primary-200">Sign in to access your dashboard.</span>
+            </h2>
+            <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+                <div class="inline-flex rounded-md shadow">
+                    <a href="{% url 'login' %}" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50 transition-all duration-200">
+                        Sign In
+                    </a>
                 </div>
             </div>
         </div>

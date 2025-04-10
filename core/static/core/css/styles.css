@@ -1,49 +1,513 @@
-/* Custom mobile styles for the NFC Payment System */
+/* Modern styles for the NFC Payment System */
 
 /* General styles */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease;
+    color: #1f2937;
+    line-height: 1.6;
 }
 
-/* Ensure buttons are large enough for touch */
+:root {
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    --secondary-gradient: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --error-gradient: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    --glass-effect: rgba(255, 255, 255, 0.1);
+    --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --hover-transform: translateY(-5px);
+}
+
+/* Enhanced button styles */
 button {
     padding: 12px 20px;
     font-size: 16px;
+    transition: all 0.2s ease;
 }
 
-/* Adjust text sizes for mobile */
-h1 {
-    font-size: 24px; /* Adjusted for mobile */
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-h2 {
-    font-size: 20px; /* Adjusted for mobile */
+button:active {
+    transform: translateY(0);
 }
 
-h3 {
-    font-size: 18px; /* Adjusted for mobile */
+/* Card styling */
+.card {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Ensure containers have appropriate padding */
-.container {
-    padding: 16px; /* Adjusted for mobile */
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Form styling */
+input, textarea, select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+/* Table styling */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+    padding: 1rem;
+}
+
+table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+table tr:hover td {
+    background-color: #f9fafb;
+}
+
+/* Badge styling */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background-color: #ecfdf5;
+    color: #047857;
+}
+
+.badge-error {
+    background-color: #fef2f2;
+    color: #b91c1c;
+}
+
+.badge-warning {
+    background-color: #fffbeb;
+    color: #b45309;
+}
+
+.badge-info {
+    background-color: #eff6ff;
+    color: #1e40af;
+}
+
+/* Animation classes */
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.3s ease-in-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a5b4fc;
 }
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
     h1 {
-        font-size: 20px; /* Further adjust for smaller screens */
+        font-size: 1.5rem;
     }
 
     h2 {
-        font-size: 18px; /* Further adjust for smaller screens */
+        font-size: 1.25rem;
     }
 
     h3 {
-        font-size: 16px; /* Further adjust for smaller screens */
+        font-size: 1.125rem;
     }
 
-    .bg-blue-600 {
-        padding: 10px; /* Adjust padding for mobile */
+    .container {
+        padding: 1rem;
     }
+    
+    button {
+        padding: 0.75rem 1rem;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    table th, table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    /* Mobile-specific enhancements */
+    .stats-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-value {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .dashboard-card-header {
+        padding: 1rem;
+    }
+    
+    .dashboard-card-body {
+        padding: 1rem;
+    }
+    
+    /* Improved touch targets for mobile */
+    a, button, .clickable {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    /* Better spacing for mobile forms */
+    input, select, textarea {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Full-width buttons on mobile */
+    .btn-mobile-full {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Improved mobile navigation */
+    .mobile-nav-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    /* Fixed position actions for mobile */
+    .mobile-fixed-bottom {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem;
+        background-color: white;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+    }
+    
+    /* Sticky headers for mobile */
+    .mobile-sticky-header {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 40;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Additional responsive breakpoints */
+@media (max-width: 768px) {
+    .md-hide {
+        display: none;
+    }
+    
+    .md-full-width {
+        width: 100%;
+    }
+    
+    .md-text-center {
+        text-align: center;
+    }
+    
+    .md-flex-col {
+        flex-direction: column;
+    }
+    
+    .md-items-center {
+        align-items: center;
+    }
+    
+    .md-justify-center {
+        justify-content: center;
+    }
+    
+    .md-space-y-4 > * + * {
+        margin-top: 1rem;
+    }
+}
+
+/* NFC Card styling - Modern Glass Morphism */
+.nfc-card {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 1.25rem;
+    padding: 1.75rem;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.nfc-card:hover {
+    transform: var(--hover-transform);
+    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+.nfc-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+    transform: rotate(30deg);
+    animation: shimmer 5s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { transform: rotate(30deg) translateY(0); }
+    50% { transform: rotate(30deg) translateY(5%); }
+    100% { transform: rotate(30deg) translateY(0); }
+}
+
+.nfc-card-chip {
+    width: 45px;
+    height: 35px;
+    background: var(--accent-gradient);
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nfc-card-chip::before, .nfc-card-chip::after {
+    content: '';
+    position: absolute;
+    background: rgba(255,255,255,0.15);
+}
+
+.nfc-card-chip::before {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 15px;
+    border-radius: 3px;
+}
+
+.nfc-card-chip::after {
+    left: 15px;
+    right: 15px;
+    top: 20px;
+    bottom: 5px;
+    border-radius: 3px;
+}
+
+/* Dashboard card styling - Modern and Sleek */
+.dashboard-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.dashboard-card:hover {
+    transform: var(--hover-transform);
+    box-shadow: var(--card-shadow);
+    border-color: rgba(199, 210, 254, 0.7);
+}
+
+.dashboard-card-header {
+    padding: 1.5rem;
+    background: linear-gradient(to right, rgba(249, 250, 251, 0.8), rgba(255, 255, 255, 0.9));
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    display: flex;
+    align-items: center;
+}
+
+.dashboard-card-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.dashboard-card-body {
+    padding: 1.5rem;
+    background-color: white;
+}
+
+.dashboard-card-footer {
+    padding: 1.25rem;
+    background: linear-gradient(to right, rgba(249, 250, 251, 0.8), rgba(255, 255, 255, 0.9));
+    border-top: 1px solid rgba(229, 231, 235, 0.5);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Stats card - Modern and Vibrant */
+.stats-card {
+    border-radius: 1rem;
+    padding: 1.75rem;
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-card:hover {
+    transform: var(--hover-transform);
+    box-shadow: var(--card-shadow);
+    border-color: rgba(199, 210, 254, 0.7);
+}
+
+.stats-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background: var(--primary-gradient);
+}
+
+.stats-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+}
+
+.stats-label svg {
+    margin-right: 0.5rem;
+    color: #6366f1;
+}
+
+.stats-change {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+}
+
+.stats-change-positive {
+    color: #10b981;
+}
+
+.stats-change-negative {
+    color: #ef4444;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.alert-icon {
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+}
+
+.alert-content {
+    flex-grow: 1;
+}
+
+.alert-success {
+    background-color: #ecfdf5;
+    border-left: 4px solid #10b981;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    border-left: 4px solid #ef4444;
+}
+
+.alert-warning {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border-left: 4px solid #3b82f6;
 }
