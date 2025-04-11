@@ -470,8 +470,9 @@ class NFCUIHandler {
      * @param {Object} cardData - The NFC card data
      */
     handleCardReading(cardData) {
-        // Flag to track if sound has been played for the current card
-        if (!this.soundPlayed) {
+        // Initialize soundPlayed flag if not already set
+        this.soundPlayed = this.soundPlayed || false;
+        
         // Update card info
         this.cardId.textContent = cardData.serialNumber;
         this.readTime.textContent = new Date().toLocaleTimeString();
@@ -482,9 +483,18 @@ class NFCUIHandler {
         this.actionContainer.classList.remove('hidden');
         
         // Add log message
-            this.addLogMessage(`Card detected: ${cardData.serialNumber}`);
-            this.playSound('success'); // Play sound when a card is detected
-
+        this.addLogMessage(`Card detected: ${cardData.serialNumber}`);
+        
+        // Play sound when a card is detected
+        if (!this.soundPlayed) {
+            this.playSound('success');
+            this.soundPlayed = true;
+            
+            // Reset the flag after a delay to allow for new card readings
+            setTimeout(() => {
+                this.soundPlayed = false;
+            }, 3000);
+        }
         
         // Check if the card is already issued
         this.cardManager.sendCardData({ serialNumber: cardData.serialNumber }, 'issue_card')
@@ -497,10 +507,7 @@ class NFCUIHandler {
 
                 // Card is not issued yet, proceed to get card details
                 return this.cardManager.sendCardData({ serialNumber: cardData.serialNumber }, 'balance_inquiry');
-
-
-
-
+            })
             .then(response => {
                 // Store secure key for future transactions
                 cardData.secureKey = response.secure_key;
@@ -519,9 +526,6 @@ class NFCUIHandler {
             .catch(error => {
                 this.addLogMessage(`Error getting card details: ${error.message}`, 'error');
             });
-        
-        // Play a sound to indicate successful reading
-        this.playSound('success');
     }
 
     /**
@@ -577,8 +581,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if the NFC container exists on the page
     const nfcContainer = document.getElementById('nfc-reader');
     if (!nfcContainer) {
+        console.log('NFC container not found on this page');
         return;
     }
+    
+    console.log('Initializing NFC system...');
     
     // Create NFC reader
     const nfcReader = new NFCReader({
