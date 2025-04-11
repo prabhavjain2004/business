@@ -407,6 +407,17 @@ def nfc_api(request):
             
             # Handle specific actions
             if action == 'issue_card':
+                # Check if the card has already been issued
+                if card.customer_name or card.mobile_number or float(card.balance) > 0:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'This card has already been issued and cannot be re-issued.',
+                        'card_id': card.card_id,
+                        'customer_name': card.customer_name,
+                        'mobile_number': card.mobile_number,
+                        'balance': float(card.balance)
+                    }, status=400)
+                
                 customer_name = data.get('customer_name', '')
                 mobile_number = data.get('mobile_number', '')
                 initial_balance = data.get('initial_balance', 0)

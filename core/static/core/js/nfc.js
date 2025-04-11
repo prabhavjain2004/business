@@ -394,6 +394,11 @@ class NFCUIHandler {
                 
                 // Send the action with the card data (which may include secure key)
                 const response = await this.cardManager.sendCardData(cardData, action);
+                if (response.status === 'error') {
+                    this.addLogMessage(`Error: ${response.message}`, 'error');
+                    alert(response.message); // Display error message to the user
+                    return;
+                }
                 this.addLogMessage(`Action "${action}" submitted successfully.`);
                 this.actionContainer.classList.add('hidden');
             } catch (error) {
