@@ -32,7 +32,6 @@
                         <p class="text-lg text-center mb-4">Card detected! Enter payment amount</p>
                         
                         <div id="card-info" class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Card ID:</strong> <span id="card-id"></span></p>
                             <p><strong>Customer:</strong> <span id="customer-name">-</span></p>
                             <p><strong>Current Balance:</strong> <span id="current-balance">-</span></p>
                         </div>
@@ -81,7 +80,6 @@
                             </div>
                         </div>
                         <div class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Card ID:</strong> <span id="confirm-card-id"></span></p>
                             <p><strong>Payment Amount:</strong> <span id="confirm-amount"></span></p>
                             <p><strong>New Balance:</strong> <span id="new-balance"></span></p>
                         </div>
@@ -311,16 +309,15 @@
             if (currentStep === 1) {
                 // First scan for payment
                 scannedCardId = cardIdValue;
-                scanStatus1.textContent = `Card detected: ${cardIdValue}`;
-                addLogMessage(`Card detected: ${cardIdValue}`);
+                scanStatus1.textContent = `Card detected`;
+                addLogMessage(`Card detected`);
                 
                 // Get card info from server
                 cardManager.sendCardData(
                     { serialNumber: cardIdValue },
                     'balance_inquiry'
                 ).then(response => {
-                    // Update card info
-                    cardId.textContent = cardIdValue;
+                    // Update card info (card ID is no longer displayed)
                     customerName.textContent = response.customer_name || '-';
                     currentBalanceElement.textContent = `₹${response.balance || 0}`;
                     currentBalance = response.balance || 0;

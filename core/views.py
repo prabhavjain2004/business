@@ -6,13 +6,15 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count
 import json
 import uuid
 import random
 import string
+import qrcode
+import io
 from decimal import Decimal
 from datetime import datetime
 from .forms import (
@@ -259,6 +261,45 @@ def transactions_view(request):
         'transactions': transactions,
         'total_sales': total_sales
     })
+
+# QR code generation view
+def generate_upi_qr(request):
+    """Generate a QR code for UPI payment with the specified amount"""
+    amount = request.GET.get('amount', '0')
+    
+    try:
+        # Validate amount
+        amount_float = float(amount)
+        if amount_float <= 0:
+            return JsonResponse({'error': 'Invalid amount'}, status=400)
+        
+        # Create UPI payment link (replace with your actual UPI ID)
+        upi_id = "your-upi-id@provider"  # Replace with your actual UPI ID
+        upi_link = f"upi://pay?pa={upi_id}&pn=NFC%20System&am={amount_float}&cu=INR"
+        
+        # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(upi_link)
+        qr.make(fit=True)
+        
+        # Create an image from the QR Code
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Save the image to a bytes buffer
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+        
+        # Return the image as an HTTP response
+        return HttpResponse(buffer, content_type="image/png")
+    
+    except (ValueError, TypeError) as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 # NFC related views
 @login_required

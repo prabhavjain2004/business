@@ -32,7 +32,6 @@
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                                     <th class="py-3 px-6 text-left">Date</th>
-                                    <th class="py-3 px-6 text-left">Card ID</th>
                                     <th class="py-3 px-6 text-right">Amount</th>
                                     <th class="py-3 px-6 text-right">Previous Balance</th>
                                     <th class="py-3 px-6 text-right">New Balance</th>
@@ -44,9 +43,6 @@
                                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                                         <td class="py-3 px-6 text-left whitespace-nowrap">
                                             {{ transaction.timestamp|date:"M d, Y H:i" }}
-                                        </td>
-                                        <td class="py-3 px-6 text-left">
-                                            {{ transaction.card_identifier|truncatechars:12 }}
                                         </td>
                                         <td class="py-3 px-6 text-right">
                                             ₹{{ transaction.amount }}

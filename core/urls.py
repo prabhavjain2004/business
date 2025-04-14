@@ -37,4 +37,7 @@ urlpatterns = [
     path('cards/balance/', views.balance_inquiry_view, name='balance_inquiry'),
     path('cards/payment/', views.payment_view, name='payment'),
     path('transactions/', views.transactions_view, name='transactions'),
+    
+    # QR code generation
+    path('api/generate-upi-qr/', views.generate_upi_qr, name='generate_upi_qr'),
 ]
