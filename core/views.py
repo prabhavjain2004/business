@@ -203,6 +203,30 @@ def custom_logout(request):
     messages.success(request, 'You have been successfully logged out.')
     return redirect('home')
 
+def email_view(request):
+    """View for the Email page"""
+    return render(request, 'core/email.html')
+
+def contact_view(request):
+    """View for the Contact page"""
+    return render(request, 'core/contact.html')
+
+def help_view(request):
+    """View for the Help page"""
+    return render(request, 'core/help.html')
+
+def privacy_policy_view(request):
+    """View for the Privacy Policy page"""
+    return render(request, 'core/privacy_policy.html')
+
+def terms_of_service_view(request):
+    """View for the Terms of Service page"""
+    return render(request, 'core/terms_of_service.html')
+
+def about_us_view(request):
+    """View for the About Us page"""
+    return render(request, 'core/about_us.html')
+
 # Card operation views
 @login_required
 def issue_card_view(request):

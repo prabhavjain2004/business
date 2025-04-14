@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Help - TapNex{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-3xl mx-auto">
+            <h1 class="text-3xl font-bold text-primary-600 mb-8">Help Center</h1>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div class="flex items-center justify-center mb-6">
+                    <div class="bg-primary-100 rounded-full p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                
+                <p class="text-gray-700 mb-6 text-center">
+                    Welcome to the TapNex Help Center. Find answers to common questions and learn how to use our system effectively.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <a href="#faq" class="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-2">Frequently Asked Questions</h3>
+                        <p class="text-gray-700">Find answers to the most common questions about TapNex.</p>
+                    </a>
+                    
+                    <a href="#guides" class="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-2">User Guides</h3>
+                        <p class="text-gray-700">Step-by-step instructions for using TapNex features.</p>
+                    </a>
+                    
+                    <a href="#troubleshooting" class="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-2">Troubleshooting</h3>
+                        <p class="text-gray-700">Solutions to common technical issues.</p>
+                    </a>
+                    
+                    <a href="#contact" class="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-2">Contact Support</h3>
+                        <p class="text-gray-700">Get in touch with our support team for personalized help.</p>
+                    </a>
+                </div>
+            </div>
+            
+            <div id="faq" class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold text-primary-600 mb-6">Frequently Asked Questions</h2>
+                
+                <div class="space-y-6">
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">What is TapNex?</h3>
+                        <p class="text-gray-700">
+                            TapNex is a secure NFC-based payment and access control system that allows for contactless transactions and identification using NFC cards.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">How do I get a TapNex card?</h3>
+                        <p class="text-gray-700">
+                            TapNex cards are issued by authorized administrators. Please contact your organization's administrator or visit our office to get a new card issued.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">How do I top up my TapNex card?</h3>
+                        <p class="text-gray-700">
+                            You can top up your TapNex card at any authorized outlet or through an administrator. Simply present your card and make a payment using cash or UPI.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">What if I lose my TapNex card?</h3>
+                        <p class="text-gray-700">
+                            If you lose your card, report it immediately to your administrator or contact our support team. We can deactivate the lost card and issue a replacement.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Is my information secure?</h3>
+                        <p class="text-gray-700">
+                            Yes, TapNex uses advanced encryption and security measures to protect your personal information and transaction data. Your card is also protected with a secure key.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="guides" class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold text-primary-600 mb-6">User Guides</h2>
+                
+                <div class="space-y-4">
+                    <a href="#" class="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-1">Getting Started with TapNex</h3>
+                        <p class="text-gray-700">Learn the basics of using your TapNex card.</p>
+                    </a>
+                    
+                    <a href="#" class="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-1">Making Payments with TapNex</h3>
+                        <p class="text-gray-700">How to use your card for payments at outlets.</p>
+                    </a>
+                    
+                    <a href="#" class="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-1">Checking Your Balance</h3>
+                        <p class="text-gray-700">How to check your card balance.</p>
+                    </a>
+                    
+                    <a href="#" class="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-primary-600 mb-1">Administrator Guide</h3>
+                        <p class="text-gray-700">For administrators: Managing cards and outlets.</p>
+                    </a>
+                </div>
+            </div>
+            
+            <div id="troubleshooting" class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold text-primary-600 mb-6">Troubleshooting</h2>
+                
+                <div class="space-y-6">
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Card Not Reading</h3>
+                        <p class="text-gray-700 mb-2">
+                            If your card is not being detected by the reader, try the following:
+                        </p>
+                        <ul class="list-disc pl-6 text-gray-700">
+                            <li>Make sure you're holding the card close enough to the reader</li>
+                            <li>Hold the card steady for at least 2 seconds</li>
+                            <li>Ensure there are no other NFC cards or devices nearby</li>
+                            <li>Check if the reader device has NFC enabled</li>
+                            <li>If using a mobile device, ensure it supports NFC and has it enabled</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Payment Failed</h3>
+                        <p class="text-gray-700 mb-2">
+                            If a payment transaction fails, check the following:
+                        </p>
+                        <ul class="list-disc pl-6 text-gray-700">
+                            <li>Ensure your card has sufficient balance</li>
+                            <li>Try scanning the card again</li>
+                            <li>Check if the outlet's device is properly connected to the internet</li>
+                            <li>Contact the outlet administrator for assistance</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Browser Compatibility</h3>
+                        <p class="text-gray-700 mb-2">
+                            For the best experience with TapNex:
+                        </p>
+                        <ul class="list-disc pl-6 text-gray-700">
+                            <li>Use Google Chrome on Android (version 89 or later)</li>
+                            <li>Ensure NFC is enabled on your device</li>
+                            <li>Allow browser permissions for NFC when prompted</li>
+                            <li>Keep your browser updated to the latest version</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="contact" class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold text-primary-600 mb-6">Still Need Help?</h2>
+                <p class="text-gray-700 mb-6">
+                    If you couldn't find the answer you're looking for, our support team is ready to assist you.
+                </p>
+                
+                <div class="flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4">
+                    <a href="{% url 'email' %}" class="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors duration-200 text-center">
+                        Email Support
+                    </a>
+                    <a href="{% url 'contact' %}" class="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors duration-200 text-center">
+                        Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

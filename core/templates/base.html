@@ -1,12 +1,14 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light-mode">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}NFC Payment System{% endblock %}</title>
+    <title>{% block title %}TapNex{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <script>
         tailwind.config = {
             theme: {
@@ -37,10 +39,40 @@
                         accent: {
                             400: '#fbbf24',
                             500: '#f59e0b'
+                        },
+                        cyber: {
+                            blue: '#4f46e5',
+                            purple: '#7c3aed',
+                            pink: '#ec4899'
                         }
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif']
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'shimmer': 'shimmer 3s infinite linear',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                        'gradient': 'gradient 15s ease infinite',
+                        'circuit-pulse': 'circuit-pulse 10s infinite alternate',
+                        'particle-move': 'particle-move 8s infinite ease-in-out',
+                        'typing': 'typing 3.5s steps(40, end) forwards',
+                        'blink': 'blink 1s step-end infinite',
+                        'bounce-subtle': 'bounce-subtle 2s ease infinite',
+                        'scale-pulse': 'scale-pulse 2s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        'bounce-subtle': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        'scale-pulse': {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.05)' }
+                        }
                     }
                 }
             }
@@ -50,54 +82,72 @@
         <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
     {% endblock %}
 </head>
-<body class="bg-gray-50 font-sans antialiased min-h-screen flex flex-col">
-    <header class="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg mobile-sticky-header">
-        <div class="container mx-auto px-4 py-4">
+<body class="bg-gray-50 font-sans antialiased h-screen flex flex-col relative">
+    <!-- Simplified body without animations -->
+    
+    <header class="bg-primary-700 text-white shadow-lg mobile-sticky-header relative z-10">
+        <div class="absolute inset-0 bg-black opacity-10 z-0"></div>
+        <div class="container mx-auto px-4 py-4 relative z-10">
             <div class="flex flex-col sm:flex-row items-center justify-between">
                 <h1 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    NFC Payment System
+                    <div class="mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <span>TapNex</span>
                 </h1>
-                <!-- Desktop Navigation -->
+                <!-- Simplified Desktop Navigation -->
                 <nav class="hidden sm:flex space-x-6">
-                    <a href="{% url 'home' %}" class="hover:text-white hover:bg-primary-500 px-3 py-2 rounded-md transition-all duration-200 text-base">Home</a>
+                    <a href="{% url 'home' %}" class="hover:bg-primary-600 px-3 py-2 rounded-md text-base">
+                        <i class="fas fa-home mr-2"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{% url 'about_us' %}" class="hover:bg-primary-600 px-3 py-2 rounded-md text-base">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span>About Us</span>
+                    </a>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'dashboard' %}" class="hover:text-white hover:bg-primary-500 px-3 py-2 rounded-md transition-all duration-200 text-base">Dashboard</a>
-                        <a href="{% url 'logout' %}" class="hover:text-white hover:bg-primary-500 px-3 py-2 rounded-md transition-all duration-200 text-base">Logout</a>
+                        <a href="{% url 'dashboard' %}" class="hover:bg-primary-600 px-3 py-2 rounded-md text-base">
+                            <i class="fas fa-tachometer-alt mr-2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{% url 'logout' %}" class="hover:bg-primary-600 px-3 py-2 rounded-md text-base">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            <span>Logout</span>
+                        </a>
                     {% else %}
-                        <a href="{% url 'login' %}" class="hover:text-white hover:bg-primary-500 px-3 py-2 rounded-md transition-all duration-200 text-base">Login</a>
+                        <a href="{% url 'login' %}" class="hover:bg-primary-600 px-3 py-2 rounded-md text-base">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            <span>Login</span>
+                        </a>
                     {% endif %}
                 </nav>
                 
-                <!-- Mobile Navigation -->
-                <nav class="flex sm:hidden w-full justify-around">
-                    <a href="{% url 'home' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
+                <!-- Enhanced Mobile Navigation -->
+                <nav class="flex sm:hidden w-full justify-around mt-4">
+                    <a href="{% url 'home' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
+                        <i class="fas fa-home text-xl"></i>
                         <span class="text-xs mt-1">Home</span>
+                        <!-- Added hover effect -->
+                        <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
                     </a>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'dashboard' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                            </svg>
+                        <a href="{% url 'dashboard' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
+                            <i class="fas fa-tachometer-alt text-xl"></i>
                             <span class="text-xs mt-1">Dashboard</span>
+                            <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
                         </a>
-                        <a href="{% url 'logout' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
+                        <a href="{% url 'logout' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
+                            <i class="fas fa-sign-out-alt text-xl"></i>
                             <span class="text-xs mt-1">Logout</span>
+                            <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
                         </a>
                     {% else %}
-                        <a href="{% url 'login' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                            </svg>
+                        <a href="{% url 'login' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
+                            <i class="fas fa-sign-in-alt text-xl"></i>
                             <span class="text-xs mt-1">Login</span>
+                            <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
                         </a>
                     {% endif %}
                 </nav>
@@ -105,46 +155,71 @@
         </div>
     </header>
 
-    <main class="container mx-auto px-4 py-8 flex-grow">
+    <main class="container mx-auto px-4 py-8 flex-grow relative z-10 animate__animated animate__fadeIn animate__delay-1s">
+        <!-- Added decorative tech elements -->
+        <div class="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-primary-500/30 rounded-tl-lg -mt-2 -ml-2 hidden md:block"></div>
+        <div class="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-primary-500/30 rounded-br-lg -mb-2 -mr-2 hidden md:block"></div>
+        
         {% block content %}
         {% endblock %}
     </main>
 
-    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-auto">
-        <div class="container mx-auto px-4 py-6 sm:py-8">
+    <footer class="bg-gradient-to-r from-gray-800 via-gray-900 to-black text-white mt-auto relative z-10 animate__animated animate__fadeIn animate__delay-2s">
+        <div class="absolute inset-0 circuit-bg opacity-10"></div>
+        <!-- Enhanced tech divider with animation -->
+        <div class="tech-divider w-full relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-20 h-full bg-white/20 animate-pulse"></div>
+        </div>
+        <div class="container mx-auto px-4 py-6 sm:py-8 relative">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-6 md:mb-0 text-center md:text-left">
-                    <h3 class="text-xl font-semibold mb-2">NFC Payment System</h3>
+                    <h3 class="text-xl font-semibold mb-2 tech-gradient-text">
+                        <span class="glitch-text" data-text="TapNex">TapNex</span>
+                    </h3>
                     <p class="text-gray-300 text-sm">Secure, fast, and convenient payments</p>
+                    <!-- Added tech decoration -->
+                    <div class="hidden md:block mt-3 w-32 h-1 bg-gradient-to-r from-primary-500 to-cyber-pink rounded"></div>
                 </div>
                 <div class="flex space-x-6">
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                    <a href="{% url 'email' %}" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center tech-glow animated-icon">
+                        <i class="fas fa-envelope text-xl"></i>
                         <span class="text-xs mt-1 hidden sm:inline">Email</span>
                     </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
+                    <a href="{% url 'contact' %}" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center tech-glow animated-icon">
+                        <i class="fas fa-phone-alt text-xl"></i>
                         <span class="text-xs mt-1 hidden sm:inline">Contact</span>
                     </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <a href="{% url 'help' %}" class="text-gray-300 hover:text-white transition-colors duration-200 flex flex-col items-center tech-glow animated-icon">
+                        <i class="fas fa-question-circle text-xl"></i>
                         <span class="text-xs mt-1 hidden sm:inline">Help</span>
                     </a>
                 </div>
             </div>
-            <div class="mt-6 border-t border-gray-700 pt-6 text-center text-gray-400 text-sm">
-                &copy; {% now "Y" %} NFC Payment System. All rights reserved.
+            <div class="mt-6 border-t border-gray-700 pt-6">
+                <div class="flex flex-wrap justify-center gap-4 mb-4">
+                    <a href="{% url 'about_us' %}" class="text-gray-400 hover:text-white text-sm transition-colors duration-200 animated-underline">About Us</a>
+                    <a href="{% url 'privacy_policy' %}" class="text-gray-400 hover:text-white text-sm transition-colors duration-200 animated-underline">Privacy Policy</a>
+                    <a href="{% url 'terms_of_service' %}" class="text-gray-400 hover:text-white text-sm transition-colors duration-200 animated-underline">Terms of Service</a>
+                </div>
+                <div class="text-center text-gray-400 text-sm">
+                    &copy; {% now "Y" %} TapNex. All rights reserved.
+                </div>
             </div>
         </div>
     </footer>
+    
+    </div><!-- End of page-container -->
+
+    <!-- Enhanced Floating Action Button -->
+    <div class="floating-action-btn animate-pulse-slow">
+        <i class="fas fa-arrow-up text-xl"></i>
+        <!-- Added ripple effect -->
+        <div class="absolute inset-0 rounded-full border-2 border-white/30 animate-ping"></div>
+    </div>
+
     {% block extra_js %}
         <script src="{% static 'core/js/scripts.js' %}"></script>
+        <script src="{% static 'core/js/animations.js' %}"></script>
     {% endblock %}
 </body>
 </html>
