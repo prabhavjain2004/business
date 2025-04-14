@@ -6,6 +6,7 @@ import uuid
 import random
 import string
 from decimal import Decimal
+
 # User type choices
 USER_TYPE_CHOICES = (
     ('admin', 'Admin'),

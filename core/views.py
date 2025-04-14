@@ -8,14 +8,21 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Sum
+from django.db.models import Sum, Count
 import json
 import uuid
 import random
 import string
 from decimal import Decimal
-from .forms import ProfileUpdateForm, OutletCreationForm, OutletUpdateForm, NFCCardForm, NFCLogForm, TransactionForm
-from .models import Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, Transaction
+from datetime import datetime
+from .forms import (
+    ProfileUpdateForm, OutletForm, 
+    NFCCardForm, TopUpForm, PaymentForm
+)
+from .models import (
+    Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, 
+    Transaction
+)
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True)
@@ -107,7 +114,7 @@ def admin_dashboard(request):
 @user_passes_test(is_admin)
 def create_outlet(request):
     if request.method == 'POST':
-        form = OutletCreationForm(request.POST)
+        form = OutletForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
                 # Create user
@@ -140,7 +147,7 @@ def create_outlet(request):
                 messages.success(request, f'Outlet {outlet.outlet_name} created successfully!')
                 return redirect('admin_dashboard')
     else:
-        form = OutletCreationForm()
+        form = OutletForm()
     
     return render(request, 'core/create_outlet.html', {'form': form})
 
@@ -149,13 +156,13 @@ def update_outlet(request, outlet_id):
     outlet = get_object_or_404(Outlet, id=outlet_id)
     
     if request.method == 'POST':
-        form = OutletUpdateForm(request.POST, instance=outlet)
+        form = OutletForm(request.POST, instance=outlet)
         if form.is_valid():
             form.save()
             messages.success(request, f'Outlet {outlet.outlet_name} updated successfully!')
             return redirect('admin_dashboard')
     else:
-        form = OutletUpdateForm(instance=outlet)
+        form = OutletForm(instance=outlet)
     
     return render(request, 'core/update_outlet.html', {'form': form, 'outlet': outlet})
 
@@ -226,14 +233,14 @@ def balance_inquiry_view(request):
 def payment_view(request):
     """View for the payment page"""
     if request.method == 'POST':
-        form = TransactionForm(request.POST)
+        form = PaymentForm(request.POST)
         if form.is_valid():
             # The actual payment processing is handled by the JavaScript in the template
             # which calls the NFC API directly
             messages.success(request, 'Form is valid. Please scan the NFC card to complete the payment.')
             return render(request, 'core/payment.html', {'form': form})
     else:
-        form = TransactionForm()
+        form = PaymentForm()
     
     return render(request, 'core/payment.html', {'form': form})
 
