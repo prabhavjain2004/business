@@ -274,7 +274,7 @@ def generate_upi_qr(request):
             return JsonResponse({'error': 'Invalid amount'}, status=400)
         
         # Create UPI payment link (replace with your actual UPI ID)
-        upi_id = "your-upi-id@provider"  # Replace with your actual UPI ID
+        upi_id = "7898575626@fam"  # Replace with your actual UPI ID
         upi_link = f"upi://pay?pa={upi_id}&pn=NFC%20System&am={amount_float}&cu=INR"
         
         # Generate QR code
