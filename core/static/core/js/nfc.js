@@ -490,10 +490,10 @@ class NFCUIHandler {
             this.playSound('success');
             this.soundPlayed = true;
             
-            // Reset the flag after a delay to allow for new card readings
-            setTimeout(() => {
-                this.soundPlayed = false;
-            }, 3000);
+        // Reset the flag after a delay to allow for new card readings
+        setTimeout(() => {
+            this.soundPlayed = false;
+        }, 500);
         }
         
         // Check if the card is already issued
