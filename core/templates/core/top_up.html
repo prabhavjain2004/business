@@ -63,15 +63,6 @@
                                     <button type="button" id="payment-upi" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="upi">UPI</button>
                                 </div>
                                 <input type="hidden" id="payment-method-input" name="payment_method" value="cash">
-                                
-                                <!-- UPI QR Code Container (hidden by default) -->
-                                <div id="upi-qr-container" class="mt-4 p-4 bg-gray-100 rounded-lg text-center hidden">
-                                    <h3 class="text-lg font-semibold text-blue-600 mb-2">Scan QR Code to Pay</h3>
-                                    <div class="flex justify-center mb-2">
-                                        <img id="upi-qr-code" src="" alt="UPI QR Code" class="w-48 h-48 border border-gray-300">
-                                    </div>
-                                    <p class="text-sm text-gray-600">Scan this QR code with any UPI app to make the payment</p>
-                                </div>
                             </div>
                         </form>
                         <div class="flex justify-end mt-4">
@@ -161,6 +152,27 @@
                 </ul>
                 <button id="nfc-fallback-close-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- UPI QR Code Modal -->
+<div id="upi-qr-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-blue-600 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">UPI Payment</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center">
+                <h3 class="text-xl font-semibold text-blue-600 mb-2">Scan QR Code to Pay</h3>
+                <div class="flex justify-center mb-4">
+                    <img id="upi-qr-code" src="" alt="UPI QR Code" class="w-64 h-64 border border-gray-300">
+                </div>
+                <p class="text-gray-600 mb-4">Scan this QR code with any UPI app to make the payment</p>
+                <button id="upi-qr-done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Done
                 </button>
             </div>
         </div>
@@ -296,11 +308,19 @@
                 addLogMessage('Amount reset to ₹0');
             });
             
+            // Get UPI QR modal elements
+            const upiQrModal = document.getElementById('upi-qr-modal');
+            const upiQrCode = document.getElementById('upi-qr-code');
+            const upiQrDoneBtn = document.getElementById('upi-qr-done-btn');
+            
+            // Add event listener for UPI QR done button
+            upiQrDoneBtn.addEventListener('click', function() {
+                upiQrModal.classList.add('hidden');
+            });
+            
             // Add event listeners for payment method buttons
             const paymentMethodBtns = document.querySelectorAll('.payment-method-btn');
             const paymentMethodInput = document.getElementById('payment-method-input');
-            const upiQrContainer = document.getElementById('upi-qr-container');
-            const upiQrCode = document.getElementById('upi-qr-code');
             
             paymentMethodBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -318,23 +338,20 @@
                     const paymentMethod = this.getAttribute('data-value');
                     paymentMethodInput.value = paymentMethod;
                     
-                    // Show/hide QR code container based on payment method
+                    // Show QR code modal if UPI is selected
                     if (paymentMethod === 'upi') {
                         // Get the current amount
                         const amount = amountInput.value || 0;
                         if (amount > 0) {
                             // Update QR code image source with the current amount
                             upiQrCode.src = `{% url 'generate_upi_qr' %}?amount=${amount}`;
-                            upiQrContainer.classList.remove('hidden');
+                            upiQrModal.classList.remove('hidden');
                         } else {
                             alert('Please select an amount first');
                             // Reset to cash payment if no amount is selected
                             document.getElementById('payment-cash').click();
                             return;
                         }
-                    } else {
-                        // Hide QR code container for other payment methods
-                        upiQrContainer.classList.add('hidden');
                     }
                     
                     addLogMessage(`Payment method set to: ${paymentMethod}`);
