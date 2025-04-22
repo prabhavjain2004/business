@@ -402,22 +402,16 @@
                             // Log the error
                             addLogMessage(`Error: Card already issued to ${response.customer_name || 'a customer'} with balance ₹${response.balance}`, 'error');
                             
-                            // Reset to step 1
-                            setTimeout(() => {
-                                resetProcess();
-                            }, 1000);
+                            // Reset to step 1 immediately
+                            resetProcess();
                         } else {
-                            // Card is not issued, proceed to step 2
-                            setTimeout(() => {
-                                showStep(2);
-                            }, 1000);
+                            // Card is not issued, proceed to step 2 immediately
+                            showStep(2);
                         }
                     }).catch(error => {
                         // If the card doesn't exist in the system yet, we'll get an error, which is fine
-                        // We can proceed to step 2
-                        setTimeout(() => {
-                            showStep(2);
-                        }, 1000);
+                        // We can proceed to step 2 immediately
+                        showStep(2);
                     });
                 } else if (currentStep === 3) {
                     // Confirmation scan for issue card

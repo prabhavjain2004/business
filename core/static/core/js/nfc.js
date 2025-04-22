@@ -485,16 +485,8 @@ class NFCUIHandler {
         // Add log message
         this.addLogMessage(`Card detected: ${cardData.serialNumber}`);
         
-        // Play sound when a card is detected
-        if (!this.soundPlayed) {
-            this.playSound('success');
-            this.soundPlayed = true;
-            
-        // Reset the flag after a delay to allow for new card readings
-        setTimeout(() => {
-            this.soundPlayed = false;
-        }, 0);
-        }
+        // Always play sound when a card is detected, no flag needed
+        this.playSound('success');
         
         // Check if the card is already issued
         this.cardManager.sendCardData({ serialNumber: cardData.serialNumber }, 'issue_card')
