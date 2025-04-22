@@ -416,6 +416,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         # Get date range from request
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
+        user_type_filter = request.GET.get('user_type', '')
+        payment_method_filter = request.GET.get('payment_method', '')
         
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -441,10 +443,16 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         end_datetime = timezone.datetime.combine(end_date, timezone.datetime.max.time())
         
         # Get all transactions in the date range
-        transactions = Transaction.objects.filter(
+        transactions_query = Transaction.objects.filter(
             timestamp__range=(start_datetime, end_datetime),
             amount__gt=0  # Only top-ups (positive amounts)
         )
+        
+        # Apply payment method filter if provided
+        if payment_method_filter:
+            transactions_query = transactions_query.filter(payment_method=payment_method_filter)
+        
+        transactions = transactions_query
         
         # Group transactions by user
         user_data = {}
@@ -454,15 +462,21 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                 user_id = transaction.user.id
                 username = transaction.user.username
                 
-                # Get user type
+                # Get user type and filter out outlets
                 user_type = "Unknown"
                 try:
                     if transaction.user.is_staff:
                         user_type = "Admin"
                     elif hasattr(transaction.user, 'profile'):
                         user_type = transaction.user.profile.get_user_type_display().capitalize()
+                        if user_type.lower() == 'outlet':
+                            continue  # Skip outlets
                 except:
                     pass
+                
+                # Apply user type filter if provided
+                if user_type_filter and user_type.lower() != user_type_filter.lower():
+                    continue
                 
                 if user_id not in user_data:
                     user_data[user_id] = {
@@ -527,6 +541,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
+        user_type_filter = request.GET.get('user_type', '')
+        payment_method_filter = request.GET.get('payment_method', '')
         
         try:
             if start_date_str:
@@ -544,10 +560,16 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         end_datetime = timezone.datetime.combine(end_date, timezone.datetime.max.time())
         
         # Get all transactions in the date range
-        transactions = Transaction.objects.filter(
+        transactions_query = Transaction.objects.filter(
             timestamp__range=(start_datetime, end_datetime),
             amount__gt=0  # Only top-ups (positive amounts)
         )
+        
+        # Apply payment method filter if provided
+        if payment_method_filter:
+            transactions_query = transactions_query.filter(payment_method=payment_method_filter)
+        
+        transactions = transactions_query
         
         # Group transactions by user
         user_data = {}
@@ -557,15 +579,21 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                 user_id = transaction.user.id
                 username = transaction.user.username
                 
-                # Get user type
+                # Get user type and filter out outlets
                 user_type = "Unknown"
                 try:
                     if transaction.user.is_staff:
                         user_type = "Admin"
                     elif hasattr(transaction.user, 'profile'):
                         user_type = transaction.user.profile.get_user_type_display().capitalize()
+                        if user_type.lower() == 'outlet':
+                            continue  # Skip outlets
                 except:
                     pass
+                
+                # Apply user type filter if provided
+                if user_type_filter and user_type.lower() != user_type_filter.lower():
+                    continue
                 
                 if user_id not in user_data:
                     user_data[user_id] = {
@@ -613,7 +641,7 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         total_topups = total_cash_topups + total_upi_topups + total_nfc_topups
         total_amount = total_cash_amount + total_upi_amount + total_nfc_amount
         
-        # Prepare context
+        # Prepare context with filter options
         context = {
             'title': 'Payment Collection Analytics',
             'start_date': start_date,
@@ -627,6 +655,10 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
             'total_nfc_amount': total_nfc_amount,
             'total_topups': total_topups,
             'total_amount': total_amount,
+            'user_type_filter': user_type_filter,
+            'payment_method_filter': payment_method_filter,
+            'user_types': ['Admin', 'Volunteers'],  # Available user type filters
+            'payment_methods': ['cash', 'upi', 'nfc'],  # Available payment method filters
         }
         
         if extra_context:
