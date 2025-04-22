@@ -81,14 +81,15 @@
             
             <!-- Recent Transactions Card -->
             <div class="bg-blue-50 p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-semibold text-blue-600 mb-4">Recent Transactions</h2>
+                <h2 class="text-xl font-semibold text-blue-600 mb-4">All Transactions</h2>
                 {% if transactions %}
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto">
                         <table class="min-w-full bg-white">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                                     <th class="py-3 px-6 text-left">Date</th>
-                                    <th class="py-3 px-6 text-left">Card ID</th>
+                                    <!-- Removed Card ID column header -->
+                                    <th class="py-3 px-6 text-left">Notes</th>
                                     <th class="py-3 px-6 text-right">Amount</th>
                                     <th class="py-3 px-6 text-center">Status</th>
                                 </tr>
@@ -99,8 +100,9 @@
                                         <td class="py-3 px-6 text-left whitespace-nowrap">
                                             {{ transaction.timestamp|date:"M d, Y H:i" }}
                                         </td>
+                                        <!-- Removed Card ID cell -->
                                         <td class="py-3 px-6 text-left">
-                                            {{ transaction.card_identifier|truncatechars:12 }}
+                                            {{ transaction.notes|default:"-" }}
                                         </td>
                                         <td class="py-3 px-6 text-right">
                                             ₹{{ transaction.amount }}

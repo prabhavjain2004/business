@@ -17,13 +17,15 @@ import qrcode
 import io
 from decimal import Decimal
 from datetime import datetime
+from django.utils import timezone
+import pytz
 from .forms import (
     ProfileUpdateForm, OutletForm, 
-    NFCCardForm, TopUpForm, PaymentForm
+    NFCCardForm, TopUpForm, PaymentForm, VolunteerCreationForm
 )
 from .models import (
     Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, 
-    Transaction
+    Transaction, Volunteer
 )
 
 class SignUpForm(UserCreationForm):
@@ -57,8 +59,14 @@ def dashboard(request):
         elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet':
             # Get outlet transactions
             if hasattr(request.user, 'outlet'):
-                transactions = Transaction.objects.filter(outlet=request.user.outlet).order_by('-timestamp')[:10]
+                transactions = Transaction.objects.filter(outlet=request.user.outlet).order_by('-timestamp')
                 total_sales = Transaction.objects.filter(outlet=request.user.outlet, status='completed').aggregate(total=Sum('amount'))['total'] or 0
+                
+                # Convert transaction timestamps to Indian Standard Time (IST)
+                ist = pytz.timezone('Asia/Kolkata')
+                for transaction in transactions:
+                    if transaction.timestamp:
+                        transaction.timestamp = transaction.timestamp.astimezone(ist)
             else:
                 transactions = []
                 total_sales = 0
@@ -69,7 +77,17 @@ def dashboard(request):
                 'total_sales': total_sales
             })
         
-        # If user is neither admin nor outlet, show access denied
+        # If user is a volunteer
+        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer':
+            # Get volunteer transactions (if any) - for now, show empty or reuse outlet dashboard
+            transactions = []
+            total_sales = 0
+            return render(request, 'core/volunteer_dashboard.html', {
+                'transactions': transactions,
+                'total_sales': total_sales
+            })
+        
+        # If user is neither admin, outlet, nor volunteer, show access denied
         else:
             messages.error(request, 'Access denied. You do not have permission to access the dashboard.')
             return redirect('logout')
@@ -142,8 +160,14 @@ def create_outlet(request):
                     profile.save()
                 
                 # Create outlet
-                outlet = form.save(commit=False)
-                outlet.user = user
+                outlet = Outlet(
+                    outlet_name=form.cleaned_data['outlet_name'],
+                    address=form.cleaned_data['address'],
+                    contact_person=form.cleaned_data['contact_person'],
+                    phone_number=form.cleaned_data['phone_number'],
+                    is_active=form.cleaned_data['is_active'],
+                    user=user
+                )
                 outlet.save()
                 
                 messages.success(request, f'Outlet {outlet.outlet_name} created successfully!')
@@ -152,6 +176,19 @@ def create_outlet(request):
         form = OutletForm()
     
     return render(request, 'core/create_outlet.html', {'form': form})
+
+@user_passes_test(is_admin)
+def create_volunteer(request):
+    if request.method == 'POST':
+        form = VolunteerCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Volunteer created successfully!')
+            return redirect('admin_dashboard')
+    else:
+        form = VolunteerCreationForm()
+    
+    return render(request, 'core/create_volunteer.html', {'form': form})
 
 @user_passes_test(is_admin)
 def update_outlet(request, outlet_id):
@@ -231,18 +268,18 @@ def about_us_view(request):
 @login_required
 def issue_card_view(request):
     """View for the issue card page"""
-    # Check if user is admin
-    if not request.user.is_staff:
-        messages.error(request, 'Access denied. Only administrators can issue cards.')
+    # Check if user is admin or volunteer
+    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer')):
+        messages.error(request, 'Access denied. Only administrators or volunteers can issue cards.')
         return redirect('dashboard')
     return render(request, 'core/issue_card.html')
 
 @login_required
 def top_up_view(request):
     """View for the top-up page"""
-    # Check if user is admin
-    if not request.user.is_staff:
-        messages.error(request, 'Access denied. Only administrators can top-up cards.')
+    # Check if user is admin or volunteer
+    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer')):
+        messages.error(request, 'Access denied. Only administrators or volunteers can top-up cards.')
         return redirect('dashboard')
     return render(request, 'core/top_up.html')
 

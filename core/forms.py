@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Profile, Outlet, NFCCard
+from .models import Profile, Outlet, NFCCard, Volunteer
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=False, help_text='Optional.')
@@ -24,9 +24,14 @@ class ProfileUpdateForm(forms.ModelForm):
         fields = ('first_name', 'last_name', 'email', 'mobile_no')
 
 class OutletForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True)
+    email = forms.EmailField(max_length=254, required=True)
+    password = forms.CharField(widget=forms.PasswordInput, required=True)
+    confirm_password = forms.CharField(widget=forms.PasswordInput, required=True)
+
     class Meta:
         model = Outlet
-        fields = ['outlet_name', 'address', 'contact_person', 'phone_number', 'is_active']
+        fields = ['username', 'email', 'password', 'confirm_password', 'outlet_name', 'address', 'contact_person', 'phone_number', 'is_active']
         widgets = {
             'outlet_name': forms.TextInput(attrs={'class': 'form-input'}),
             'address': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3}),
@@ -34,6 +39,14 @@ class OutletForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-input'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if password and confirm_password and password != confirm_password:
+            self.add_error('confirm_password', "Passwords do not match")
 
 class NFCCardForm(forms.ModelForm):
     class Meta:
@@ -86,3 +99,30 @@ class PaymentForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3})
     )
+
+class VolunteerCreationForm(UserCreationForm):
+    full_name = forms.CharField(max_length=100, required=True)
+    contact_number = forms.CharField(max_length=15, required=False)
+    adhaar_card_no = forms.CharField(max_length=20, required=False)
+
+    class Meta:
+        model = User
+        fields = ('username', 'full_name', 'contact_number', 'adhaar_card_no', 'password1', 'password2')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            # Create Volunteer profile
+            volunteer = Volunteer.objects.create(
+                user=user,
+                full_name=self.cleaned_data['full_name'],
+                contact_number=self.cleaned_data.get('contact_number', ''),
+                adhaar_card_no=self.cleaned_data.get('adhaar_card_no', '')
+            )
+            # Create or update Profile with user_type volunteer
+            from .models import Profile
+            profile, created = Profile.objects.get_or_create(user=user)
+            profile.user_type = 'volunteer'
+            profile.save()
+        return user

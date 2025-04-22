@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponse
 import csv
 from datetime import datetime, timedelta
-from .models import Profile, Outlet, NFCCard, NFCLog, Transaction
+from .models import Profile, Outlet, NFCCard, NFCLog, Transaction, Volunteer
 
 # Register your models here.
 class TransactionAdmin(admin.ModelAdmin):
@@ -27,10 +27,16 @@ class ProfileInline(admin.StackedInline):
     verbose_name_plural = 'Profile'
     fk_name = 'user'
 
+class VolunteerInline(admin.StackedInline):
+    model = Volunteer
+    can_delete = False
+    verbose_name_plural = 'Volunteer Details'
+    fk_name = 'user'
+
 class OutletInline(admin.StackedInline):
     model = Outlet
     can_delete = False
-    verbose_name_plural = 'Outlet Details'
+    verbose_name_plural = 'Outlet'
     fk_name = 'user'
 
 class CustomUserAdmin(UserAdmin):
@@ -53,6 +59,8 @@ class CustomUserAdmin(UserAdmin):
         for inline_class in self.inlines:
             if inline_class == OutletInline and hasattr(obj, 'profile') and obj.profile.user_type != 'outlet':
                 continue
+            if inline_class == VolunteerInline and hasattr(obj, 'profile') and obj.profile.user_type != 'volunteer':
+                continue
             inline = inline_class(self.model, self.admin_site)
             inline_instances.append(inline)
         return inline_instances
@@ -64,6 +72,8 @@ class CustomUserAdmin(UserAdmin):
         inlines = []
         if hasattr(obj, 'profile') and obj.profile.user_type == 'outlet':
             inlines = [ProfileInline, OutletInline]
+        elif hasattr(obj, 'profile') and obj.profile.user_type == 'volunteer':
+            inlines = [ProfileInline, VolunteerInline]
         else:
             inlines = [ProfileInline]
         return inlines
@@ -350,6 +360,7 @@ class AnalyticsAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Outlet, OutletAdmin)
+admin.site.register(Volunteer, admin.ModelAdmin)
 admin.site.register(NFCCard, NFCCardAdmin)
 admin.site.register(NFCLog, NFCLogAdmin)
 admin.site.register(Transaction, TransactionAdmin)

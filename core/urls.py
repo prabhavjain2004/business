@@ -19,6 +19,7 @@ urlpatterns = [
     path('management/outlets/create/', views.create_outlet, name='create_outlet'),
     path('management/outlets/<int:outlet_id>/update/', views.update_outlet, name='update_outlet'),
     path('management/outlets/<int:outlet_id>/delete/', views.delete_outlet, name='delete_outlet'),
+    path('management/volunteers/create/', views.create_volunteer, name='create_volunteer'),
     
     # NFC related routes
     path('nfc/reader/', views.nfc_reader, name='nfc_reader'),
@@ -37,6 +38,9 @@ urlpatterns = [
     path('cards/balance/', views.balance_inquiry_view, name='balance_inquiry'),
     path('cards/payment/', views.payment_view, name='payment'),
     path('transactions/', views.transactions_view, name='transactions'),
+
+    # Volunteer dashboard
+    path('volunteer/dashboard/', views.dashboard, name='volunteer_dashboard'),
     
     # QR code generation
     path('api/generate-upi-qr/', views.generate_upi_qr, name='generate_upi_qr'),
