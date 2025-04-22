@@ -79,12 +79,24 @@ def dashboard(request):
         
         # If user is a volunteer
         elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer':
-            # Get volunteer transactions (if any) - for now, show empty or reuse outlet dashboard
-            transactions = []
-            total_sales = 0
+            # Get transactions where this volunteer is the user
+            transactions = Transaction.objects.filter(
+                user=request.user,
+                amount__lt=0  # Only show top-ups (negative amounts)
+            ).order_by('-timestamp')
+            
+            # Calculate total amount collected
+            total_collected = abs(transactions.aggregate(total=Sum('amount'))['total'] or 0)
+            
+            # Convert transaction timestamps to Indian Standard Time (IST)
+            ist = pytz.timezone('Asia/Kolkata')
+            for transaction in transactions:
+                if transaction.timestamp:
+                    transaction.timestamp = transaction.timestamp.astimezone(ist)
+            
             return render(request, 'core/volunteer_dashboard.html', {
                 'transactions': transactions,
-                'total_sales': total_sales
+                'total_sales': total_collected
             })
         
         # If user is neither admin, outlet, nor volunteer, show access denied
