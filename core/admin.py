@@ -1,9 +1,26 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Profile, Outlet, NFCCard, NFCLog
+from django.utils import timezone
+from django.db.models import Count, Sum
+from django.urls import path
+from django.template.response import TemplateResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+from django.http import HttpResponse
+import csv
+from datetime import datetime, timedelta
+from .models import Profile, Outlet, NFCCard, NFCLog, Transaction
 
 # Register your models here.
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ('card_identifier', 'outlet', 'user', 'amount', 'payment_method', 'timestamp', 'status')
+    list_filter = ('status', 'payment_method', 'outlet', 'timestamp')
+    search_fields = ('card_identifier', 'notes')
+    readonly_fields = ('timestamp', 'previous_balance', 'new_balance')
+    date_hierarchy = 'timestamp'
+
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
@@ -70,9 +87,279 @@ class NFCLogAdmin(admin.ModelAdmin):
     readonly_fields = ('timestamp',)
     date_hierarchy = 'timestamp'
 
+class AnalyticsAdmin(admin.ModelAdmin):
+    """Admin model for analytics view"""
+    change_list_template = 'admin/analytics_change_list.html'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+        
+    def has_view_permission(self, request, obj=None):
+        # Only allow superusers to view the analytics
+        return request.user.is_superuser
+    
+    def has_module_permission(self, request):
+        # Only show the analytics module to superusers
+        return request.user.is_superuser
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('export/', self.admin_site.admin_view(self.export_analytics), name='export_analytics'),
+        ]
+        return custom_urls + urls
+    
+    def export_analytics(self, request):
+        """Export analytics data for a date range as CSV"""
+        # Get date range from request
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            # Default to last 30 days if dates are invalid
+            end_date = timezone.now().date()
+            start_date = end_date - timedelta(days=30)
+        
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="analytics_{start_date}_to_{end_date}.csv"'
+        
+        # Get all outlets
+        outlets = Outlet.objects.filter(is_active=True)
+        
+        # Create CSV writer
+        writer = csv.writer(response)
+        
+        # Create header row with outlet names
+        header = ['Date', 'Cards Issued', 'Total Top-ups', 'Top-up Amount', 'Total Payments', 'Payment Amount']
+        for outlet in outlets:
+            header.extend([
+                f'{outlet.outlet_name} - Transactions',
+                f'{outlet.outlet_name} - Top-ups',
+                f'{outlet.outlet_name} - Top-up Amount',
+                f'{outlet.outlet_name} - Payments',
+                f'{outlet.outlet_name} - Payment Amount'
+            ])
+        
+        writer.writerow(header)
+        
+        # Generate data for each day in the range
+        current_date = start_date
+        while current_date <= end_date:
+            # Calculate start and end datetime for the current date
+            start_datetime = timezone.datetime.combine(current_date, timezone.datetime.min.time())
+            end_datetime = timezone.datetime.combine(current_date, timezone.datetime.max.time())
+            
+            # Get analytics data for the current date
+            cards_issued = NFCCard.objects.filter(
+                created_at__range=(start_datetime, end_datetime)
+            ).count()
+            
+            # Get topup transactions (negative amounts)
+            topups = Transaction.objects.filter(
+                timestamp__range=(start_datetime, end_datetime),
+                amount__lt=0  # Negative amounts are topups
+            )
+            
+            # Get payment transactions (positive amounts)
+            payments = Transaction.objects.filter(
+                timestamp__range=(start_datetime, end_datetime),
+                amount__gt=0  # Positive amounts are payments
+            )
+            
+            # Calculate totals
+            total_topups = topups.count()
+            topup_amount = abs(topups.aggregate(Sum('amount'))['amount__sum'] or 0)
+            total_payments = payments.count()
+            payment_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+            
+            # Get transactions by outlet for the current date
+            all_transactions = Transaction.objects.filter(
+                timestamp__range=(start_datetime, end_datetime)
+            )
+            
+            # Group transactions by outlet
+            outlet_transactions = {}
+            for outlet in outlets:
+                outlet_transactions[outlet.id] = {
+                    'count': 0,
+                    'topups': 0,
+                    'topup_amount': 0,
+                    'payments': 0,
+                    'payment_amount': 0
+                }
+            
+            for transaction in all_transactions:
+                if transaction.outlet and transaction.outlet.id in outlet_transactions:
+                    outlet_id = transaction.outlet.id
+                    outlet_transactions[outlet_id]['count'] += 1
+                    
+                    if transaction.amount < 0:  # Topup
+                        outlet_transactions[outlet_id]['topups'] += 1
+                        outlet_transactions[outlet_id]['topup_amount'] += abs(transaction.amount)
+                    else:  # Payment
+                        outlet_transactions[outlet_id]['payments'] += 1
+                        outlet_transactions[outlet_id]['payment_amount'] += transaction.amount
+            
+            # Create row for current date
+            row = [
+                current_date.strftime('%Y-%m-%d'),
+                cards_issued,
+                total_topups,
+                topup_amount,
+                total_payments,
+                payment_amount
+            ]
+            
+            # Add outlet-specific data
+            for outlet in outlets:
+                outlet_data = outlet_transactions.get(outlet.id, {
+                    'count': 0,
+                    'topups': 0,
+                    'topup_amount': 0,
+                    'payments': 0,
+                    'payment_amount': 0
+                })
+                
+                row.extend([
+                    outlet_data['count'],
+                    outlet_data['topups'],
+                    outlet_data['topup_amount'],
+                    outlet_data['payments'],
+                    outlet_data['payment_amount']
+                ])
+            
+            # Write row
+            writer.writerow(row)
+            
+            # Move to next day
+            current_date += timedelta(days=1)
+        
+        return response
+    
+    def changelist_view(self, request, extra_context=None):
+        # Check if export action is requested
+        if 'export' in request.GET:
+            return self.export_analytics(request)
+        
+        # Get the selected date from the request or use today
+        date_str = request.GET.get('date')
+        if date_str:
+            try:
+                selected_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = timezone.now().date()
+        else:
+            selected_date = timezone.now().date()
+        
+        # Calculate start and end datetime for the selected date
+        start_datetime = timezone.datetime.combine(selected_date, timezone.datetime.min.time())
+        end_datetime = timezone.datetime.combine(selected_date, timezone.datetime.max.time())
+        
+        # Get analytics data for the selected date
+        cards_issued = NFCCard.objects.filter(
+            created_at__range=(start_datetime, end_datetime)
+        ).count()
+        
+        # Get topup transactions (negative amounts)
+        topups = Transaction.objects.filter(
+            timestamp__range=(start_datetime, end_datetime),
+            amount__lt=0  # Negative amounts are topups
+        )
+        
+        # Get payment transactions (positive amounts)
+        payments = Transaction.objects.filter(
+            timestamp__range=(start_datetime, end_datetime),
+            amount__gt=0  # Positive amounts are payments
+        )
+        
+        # Calculate totals
+        total_topups = topups.count()
+        topup_amount = abs(topups.aggregate(Sum('amount'))['amount__sum'] or 0)
+        total_payments = payments.count()
+        payment_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        # Get transactions by outlet
+        all_transactions = Transaction.objects.filter(
+            timestamp__range=(start_datetime, end_datetime)
+        )
+        
+        # Group transactions by outlet
+        outlet_transactions = {}
+        for transaction in all_transactions:
+            if transaction.outlet:
+                outlet_name = transaction.outlet.outlet_name
+                if outlet_name not in outlet_transactions:
+                    outlet_transactions[outlet_name] = {
+                        'count': 0,
+                        'topups': 0,
+                        'topup_amount': 0,
+                        'payments': 0,
+                        'payment_amount': 0
+                    }
+                
+                outlet_transactions[outlet_name]['count'] += 1
+                
+                if transaction.amount < 0:  # Topup
+                    outlet_transactions[outlet_name]['topups'] += 1
+                    outlet_transactions[outlet_name]['topup_amount'] += abs(transaction.amount)
+                else:  # Payment
+                    outlet_transactions[outlet_name]['payments'] += 1
+                    outlet_transactions[outlet_name]['payment_amount'] += transaction.amount
+        
+        # Sort outlets by transaction count (descending)
+        sorted_outlets = sorted(
+            outlet_transactions.items(),
+            key=lambda x: x[1]['count'],
+            reverse=True
+        )
+        
+        # Default date range for export (last 30 days)
+        today = timezone.now().date()
+        default_start_date = today - timedelta(days=30)
+        
+        # Prepare context
+        context = {
+            'title': 'Analytics',
+            'selected_date': selected_date,
+            'cards_issued': cards_issued,
+            'total_topups': total_topups,
+            'topup_amount': topup_amount,
+            'total_payments': total_payments,
+            'payment_amount': payment_amount,
+            'outlet_transactions': sorted_outlets,
+            'default_start_date': default_start_date,
+            'default_end_date': today,
+        }
+        
+        if extra_context:
+            context.update(extra_context)
+        
+        return super().changelist_view(request, context)
+
 # Unregister the default UserAdmin and register our custom one
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Outlet, OutletAdmin)
 admin.site.register(NFCCard, NFCCardAdmin)
 admin.site.register(NFCLog, NFCLogAdmin)
+admin.site.register(Transaction, TransactionAdmin)
+
+# Create a proxy model for analytics
+class Analytics(Transaction):
+    class Meta:
+        proxy = True
+        verbose_name = 'Analytics'
+        verbose_name_plural = 'Analytics'
+
+# Register the analytics view
+admin.site.register(Analytics, AnalyticsAdmin)

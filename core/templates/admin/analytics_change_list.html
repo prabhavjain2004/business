@@ -1,0 +1,107 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block content_title %}
+  <h1>Analytics Dashboard</h1>
+{% endblock %}
+
+{% block result_list %}
+<div style="padding: 20px; background-color: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <div style="margin-bottom: 20px;">
+    <h2 style="margin-bottom: 15px;">Date Selection</h2>
+    <form method="get" style="display: flex; align-items: center;">
+      <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px;">
+      <button type="submit" style="background-color: #447e9b; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">View Analytics</button>
+    </form>
+  </div>
+  
+  <div style="margin-bottom: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #e9ecef;">
+    <h2 style="margin-bottom: 15px;">Export Analytics</h2>
+    <p style="margin-bottom: 15px; color: #6c757d;">Export analytics data for a specific date range as a CSV file.</p>
+    <form method="get" action="{% url 'admin:export_analytics' %}" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+      <div style="display: flex; flex-direction: column;">
+        <label for="start_date" style="margin-bottom: 5px; font-weight: bold;">Start Date:</label>
+        <input type="date" id="start_date" name="start_date" value="{{ default_start_date|date:'Y-m-d' }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <label for="end_date" style="margin-bottom: 5px; font-weight: bold;">End Date:</label>
+        <input type="date" id="end_date" name="end_date" value="{{ default_end_date|date:'Y-m-d' }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; height: 38px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 5px; vertical-align: text-top;">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Export CSV
+      </button>
+    </form>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h2 style="margin-bottom: 15px;">Analytics for {{ selected_date|date:"F j, Y" }}</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+      <!-- Cards Issued -->
+      <div style="background-color: #e8f4f8; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">Cards Issued</h3>
+        <p style="font-size: 24px; font-weight: bold; margin: 10px 0; color: #3498db;">{{ cards_issued }}</p>
+        <p style="color: #7f8c8d; margin: 0;">New cards issued on this date</p>
+      </div>
+      
+      <!-- Top-ups -->
+      <div style="background-color: #f0f9eb; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">Top-ups</h3>
+        <p style="font-size: 24px; font-weight: bold; margin: 10px 0; color: #27ae60;">{{ total_topups }}</p>
+        <p style="color: #7f8c8d; margin: 0;">Total top-up transactions</p>
+        <p style="font-size: 18px; font-weight: bold; margin: 10px 0; color: #27ae60;">₹{{ topup_amount }}</p>
+        <p style="color: #7f8c8d; margin: 0;">Total amount topped up</p>
+      </div>
+      
+      <!-- Payments -->
+      <div style="background-color: #fef0f0; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">Payments</h3>
+        <p style="font-size: 24px; font-weight: bold; margin: 10px 0; color: #e74c3c;">{{ total_payments }}</p>
+        <p style="color: #7f8c8d; margin: 0;">Total payment transactions</p>
+        <p style="font-size: 18px; font-weight: bold; margin: 10px 0; color: #e74c3c;">₹{{ payment_amount }}</p>
+        <p style="color: #7f8c8d; margin: 0;">Total amount paid</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Outlet Transactions -->
+  {% if outlet_transactions %}
+  <div style="margin-bottom: 20px;">
+    <h2 style="margin-bottom: 15px;">Transactions by Outlet</h2>
+    
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+            <th style="padding: 12px 15px; text-align: left; font-weight: bold;">Outlet</th>
+            <th style="padding: 12px 15px; text-align: center; font-weight: bold;">Total Transactions</th>
+            <th style="padding: 12px 15px; text-align: center; font-weight: bold;">Top-ups</th>
+            <th style="padding: 12px 15px; text-align: center; font-weight: bold;">Top-up Amount</th>
+            <th style="padding: 12px 15px; text-align: center; font-weight: bold;">Payments</th>
+            <th style="padding: 12px 15px; text-align: center; font-weight: bold;">Payment Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for outlet_name, data in outlet_transactions %}
+          <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 12px 15px; font-weight: bold;">{{ outlet_name }}</td>
+            <td style="padding: 12px 15px; text-align: center;">{{ data.count }}</td>
+            <td style="padding: 12px 15px; text-align: center;">{{ data.topups }}</td>
+            <td style="padding: 12px 15px; text-align: center;">₹{{ data.topup_amount }}</td>
+            <td style="padding: 12px 15px; text-align: center;">{{ data.payments }}</td>
+            <td style="padding: 12px 15px; text-align: center;">₹{{ data.payment_amount }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block pagination %}{% endblock %}
