@@ -426,30 +426,29 @@
             nfcErrorModal.classList.remove('hidden');
         }
         
-        // Function to go to step 3
-        function goToStep3() {
-            // Validate form
-            if (parseInt(amountInput.value) <= 0) {
-                alert('Please select a payment amount');
-                return;
-            }
-            
-            // Check if amount is greater than balance
-            if (parseFloat(amountInput.value) > parseFloat(currentBalance)) {
-                alert('Insufficient balance. The payment amount cannot exceed the card balance.');
-                return;
-            }
-            
-            // Update confirmation info
-            confirmCardId.textContent = scannedCardId;
-            confirmAmount.textContent = totalAmount.textContent;
-            const newBalanceValue = parseFloat(currentBalance) - parseFloat(amountInput.value);
-            newBalance.textContent = `₹${newBalanceValue.toFixed(2)}`;
-            
-            // Go to step 3
-            showStep(3);
-            addLogMessage('Please tap the card again to confirm payment');
+    // Function to go to step 3
+    function goToStep3() {
+        // Validate form
+        if (parseInt(amountInput.value) <= 0) {
+            alert('Please select a payment amount');
+            return;
         }
+        
+        // Check if amount is greater than balance
+        if (parseFloat(amountInput.value) > parseFloat(currentBalance)) {
+            alert('Insufficient balance. The payment amount cannot exceed the card balance.');
+            return;
+        }
+        
+        // Update confirmation info
+        confirmAmount.textContent = totalAmount.textContent;
+        const newBalanceValue = parseFloat(currentBalance) - parseFloat(amountInput.value);
+        newBalance.textContent = `₹${newBalanceValue.toFixed(2)}`;
+        
+        // Go to step 3
+        showStep(3);
+        addLogMessage('Please tap the card again to confirm payment');
+    }
         
         // Function to reset the process
         function resetProcess() {
