@@ -386,10 +386,39 @@
                     scanStatus1.textContent = `Card detected: ${cardId}`;
                     addLogMessage(`Card detected: ${cardId}`);
                     
-                    // Move to step 2 after a short delay
-                    setTimeout(() => {
-                        showStep(2);
-                    }, 1000);
+                    // Check if the card is already issued before proceeding to step 2
+                    cardManager.sendCardData(
+                        { serialNumber: cardId },
+                        'balance_inquiry',
+                        {}
+                    ).then(response => {
+                        // If we get a successful response with customer details or balance, the card is already issued
+                        if (response.customer_name || response.balance > 0) {
+                            // Show error message
+                            nfcErrorTitle.textContent = 'Card Already Issued';
+                            nfcErrorMessage.textContent = `This card has already been issued to ${response.customer_name || 'a customer'} with a balance of ₹${response.balance}. Please use a new card.`;
+                            nfcErrorModal.classList.remove('hidden');
+                            
+                            // Log the error
+                            addLogMessage(`Error: Card already issued to ${response.customer_name || 'a customer'} with balance ₹${response.balance}`, 'error');
+                            
+                            // Reset to step 1
+                            setTimeout(() => {
+                                resetProcess();
+                            }, 1000);
+                        } else {
+                            // Card is not issued, proceed to step 2
+                            setTimeout(() => {
+                                showStep(2);
+                            }, 1000);
+                        }
+                    }).catch(error => {
+                        // If the card doesn't exist in the system yet, we'll get an error, which is fine
+                        // We can proceed to step 2
+                        setTimeout(() => {
+                            showStep(2);
+                        }, 1000);
+                    });
                 } else if (currentStep === 3) {
                     // Confirmation scan for issue card
                     if (cardId === scannedCardId) {
