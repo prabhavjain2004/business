@@ -132,6 +132,11 @@
                         <!-- Added hover effect -->
                         <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
                     </a>
+                    <a href="{% url 'about_us' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
+                        <i class="fas fa-info-circle text-xl"></i>
+                        <span class="text-xs mt-1">About</span>
+                        <span class="absolute inset-0 bg-white/10 rounded-md scale-0 group-hover:scale-100 transition-transform duration-300"></span>
+                    </a>
                     {% if user.is_authenticated %}
                         <a href="{% url 'dashboard' %}" class="flex flex-col items-center px-3 py-2 hover:bg-primary-500 rounded-md transition-all duration-200 tech-glow relative group">
                             <i class="fas fa-tachometer-alt text-xl"></i>

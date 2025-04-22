@@ -1225,21 +1225,29 @@ header .glitch-btn::before {
 
 /* Fix for mobile navigation */
 @media (max-width: 640px) {
-    header .flex.flex-col.sm\\:flex-row {
-        flex-direction: row !important;
-        justify-content: space-between;
-        align-items: center;
+    header .flex.flex-col.sm\:flex-row {
+        flex-direction: column !important;
     }
     
     header h1 {
-        margin-bottom: 0 !important;
+        margin-bottom: 1rem !important;
+        text-align: center;
     }
     
-    header nav.flex.sm\\:hidden {
+    header nav.flex.sm\:hidden {
+        display: flex !important;
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 0.5rem;
+    }
+    
+    header nav.hidden.sm\:flex {
         display: none !important;
     }
     
-    header nav.hidden.sm\\:flex {
-        display: flex !important;
+    .mobile-sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
     }
 }
