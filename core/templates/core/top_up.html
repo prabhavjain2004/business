@@ -414,7 +414,14 @@
                         const amount = amountInput.value;
                         const paymentMethod = document.getElementById('payment-method-input').value;
                         
-                        // Send data to server
+                        // Play success sound immediately
+                        playSound('success');
+                        
+                        // Move to success step immediately to avoid delay
+                        addLogMessage(`Top-up successful! Amount: ₹${amount}`);
+                        showStep(4);
+                        
+                        // Send data to server in the background
                         cardManager.sendCardData(
                             { serialNumber: cardIdValue },
                             'top_up',
@@ -423,9 +430,8 @@
                                 payment_method: paymentMethod
                             }
                         ).then(response => {
-                            // Move to success step
-                            addLogMessage(`Top-up successful! Amount: ₹${amount}`);
-                            showStep(4);
+                            // Update success message with server response if needed
+                            addLogMessage(`Top-up confirmed by server. New balance: ₹${response.new_balance || 'updated'}`);
                         }).catch(error => {
                             scanStatus3.textContent = `Error: ${error.message}`;
                             addLogMessage(`Error: ${error.message}`, 'error');
@@ -556,6 +562,26 @@
                 
                 activityLog.appendChild(logEntry);
                 activityLog.scrollTop = activityLog.scrollHeight;
+            }
+            
+            // Function to play sound
+            function playSound(type) {
+                const audio = new Audio();
+                
+                switch (type) {
+                    case 'success':
+                        audio.src = '/static/core/sounds/beep.mp3';
+                        break;
+                    case 'error':
+                        audio.src = '/static/core/sounds/beep.mp3';
+                        break;
+                    default:
+                        audio.src = '/static/core/sounds/beep.mp3';
+                }
+                
+                audio.play().catch(error => {
+                    console.warn('Could not play sound:', error);
+                });
             }
         });
     </script>

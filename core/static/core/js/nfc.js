@@ -470,9 +470,6 @@ class NFCUIHandler {
      * @param {Object} cardData - The NFC card data
      */
     handleCardReading(cardData) {
-        // Initialize soundPlayed flag if not already set
-        this.soundPlayed = this.soundPlayed || false;
-        
         // Update card info
         this.cardId.textContent = cardData.serialNumber;
         this.readTime.textContent = new Date().toLocaleTimeString();

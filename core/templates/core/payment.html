@@ -332,60 +332,68 @@
                     addLogMessage(`Error: ${error.message}`, 'error');
                 });
             } else if (currentStep === 3) {
-                // Confirmation scan for payment
-                if (cardIdValue === scannedCardId) {
-                    scanStatus3.textContent = 'Card confirmed! Processing...';
-                    addLogMessage('Card confirmed! Processing...');
-                    
-                    // Get amount and notes
-                    const amount = amountInput.value;
-                    const notes = notesInput.value;
-                    
-                    // Prepare payment data
-                    const paymentData = {
-                        action: 'payment',
-                        amount: amount,
-                        notes: notes
-                    };
-                    
-                    // Use secure key if available, otherwise use card_id
-                    if (secureKey) {
-                        paymentData.secure_key = secureKey;
-                    } else {
-                        paymentData.card_id = cardIdValue;
-                    }
-                    
-                    // Send data to server
-                    fetch('/api/nfc/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCsrfToken()
-                        },
-                        body: JSON.stringify(paymentData)
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(data => {
-                                throw new Error(data.message || 'Payment failed');
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(response => {
-                        // Update transaction details
-                        transactionId.textContent = response.transaction_id || '-';
-                        finalAmount.textContent = `₹${response.amount}`;
-                        previousBalance.textContent = `₹${response.previous_balance}`;
-                        finalBalance.textContent = `₹${response.new_balance}`;
-                        transactionTime.textContent = new Date(response.timestamp).toLocaleString();
+                    // Confirmation scan for payment
+                    if (cardIdValue === scannedCardId) {
+                        scanStatus3.textContent = 'Card confirmed! Processing...';
+                        addLogMessage('Card confirmed! Processing...');
                         
-                        // Play success sound
+                        // Get amount and notes
+                        const amount = amountInput.value;
+                        const notes = notesInput.value;
+                        
+                        // Play success sound immediately
                         playSound('success');
                         
-                        // Move to success step
+                        // Move to success step immediately to avoid delay
                         addLogMessage(`Payment successful! Amount: ₹${amount}`);
                         showStep(4);
+                        
+                        // Set initial values for transaction details
+                        transactionId.textContent = 'Processing...';
+                        finalAmount.textContent = `₹${amount}`;
+                        previousBalance.textContent = `₹${currentBalance}`;
+                        const estimatedNewBalance = parseFloat(currentBalance) - parseFloat(amount);
+                        finalBalance.textContent = `₹${estimatedNewBalance.toFixed(2)}`;
+                        transactionTime.textContent = new Date().toLocaleString();
+                        
+                        // Prepare payment data
+                        const paymentData = {
+                            action: 'payment',
+                            amount: amount,
+                            notes: notes
+                        };
+                        
+                        // Use secure key if available, otherwise use card_id
+                        if (secureKey) {
+                            paymentData.secure_key = secureKey;
+                        } else {
+                            paymentData.card_id = cardIdValue;
+                        }
+                        
+                        // Send data to server in the background
+                        fetch('/api/nfc/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCsrfToken()
+                            },
+                            body: JSON.stringify(paymentData)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(data => {
+                                    throw new Error(data.message || 'Payment failed');
+                                });
+                            }
+                            return response.json();
+                        })
+                        .then(response => {
+                            // Update transaction details with actual values from server
+                            transactionId.textContent = response.transaction_id || '-';
+                            finalAmount.textContent = `₹${response.amount}`;
+                            previousBalance.textContent = `₹${response.previous_balance}`;
+                            finalBalance.textContent = `₹${response.new_balance}`;
+                            transactionTime.textContent = new Date(response.timestamp).toLocaleString();
                     })
                     .catch(error => {
                         scanStatus3.textContent = `Error: ${error.message}`;

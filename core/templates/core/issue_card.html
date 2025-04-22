@@ -414,31 +414,37 @@
                         showStep(2);
                     });
                 } else if (currentStep === 3) {
-                    // Confirmation scan for issue card
-                    if (cardId === scannedCardId) {
-                        scanStatus3.textContent = 'Card confirmed! Processing...';
-                        addLogMessage('Card confirmed! Processing...');
-                        
-                        // Get form data
-                        const name = customerName.value;
-                        const mobile = mobileNumber.value;
-                        const amount = amountInput.value;
-                        const paymentMethod = document.getElementById('payment-method-input').value;
-                        
-                        // Send data to server
-                        cardManager.sendCardData(
-                            { serialNumber: cardId },
-                            'issue_card',
-                            {
-                                customer_name: name,
-                                mobile_number: mobile,
-                                initial_balance: amount,
-                                payment_method: paymentMethod
-                            }
-                        ).then(response => {
-                            // Move to success step
+                        // Confirmation scan for issue card
+                        if (cardId === scannedCardId) {
+                            scanStatus3.textContent = 'Card confirmed! Processing...';
+                            addLogMessage('Card confirmed! Processing...');
+                            
+                            // Get form data
+                            const name = customerName.value;
+                            const mobile = mobileNumber.value;
+                            const amount = amountInput.value;
+                            const paymentMethod = document.getElementById('payment-method-input').value;
+                            
+                            // Play success sound immediately
+                            playSound('success');
+                            
+                            // Move to success step immediately to avoid delay
                             addLogMessage('Card issued successfully!');
                             showStep(4);
+                            
+                            // Send data to server in the background
+                            cardManager.sendCardData(
+                                { serialNumber: cardId },
+                                'issue_card',
+                                {
+                                    customer_name: name,
+                                    mobile_number: mobile,
+                                    initial_balance: amount,
+                                    payment_method: paymentMethod
+                                }
+                            ).then(response => {
+                                // Update success message with server response if needed
+                                addLogMessage(`Card issuance confirmed by server. Card ID: ${cardId}`);
                         }).catch(error => {
                             scanStatus3.textContent = `Error: ${error.message}`;
                             addLogMessage(`Error: ${error.message}`, 'error');
@@ -579,6 +585,26 @@
                 
                 activityLog.appendChild(logEntry);
                 activityLog.scrollTop = activityLog.scrollHeight;
+            }
+            
+            // Function to play sound
+            function playSound(type) {
+                const audio = new Audio();
+                
+                switch (type) {
+                    case 'success':
+                        audio.src = '/static/core/sounds/beep.mp3';
+                        break;
+                    case 'error':
+                        audio.src = '/static/core/sounds/beep.mp3';
+                        break;
+                    default:
+                        audio.src = '/static/core/sounds/beep.mp3';
+                }
+                
+                audio.play().catch(error => {
+                    console.warn('Could not play sound:', error);
+                });
             }
         });
     </script>
