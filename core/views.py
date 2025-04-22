@@ -505,7 +505,7 @@ def nfc_api(request):
                 return JsonResponse({'status': 'error', 'message': 'Card ID or Secure Key is required'}, status=400)
             
             # If this is a new card being registered
-            if card_id and not secure_key and action != 'balance_inquiry' and action != 'top_up' and action != 'payment':
+            if card_id and not secure_key and action not in ['balance_inquiry', 'top_up', 'payment']:
                 # Get or create the card with a new secure key
                 card, created = NFCCard.objects.get_or_create(
                     card_id=card_id,
@@ -525,6 +525,24 @@ def nfc_api(request):
                     created = False
                 except NFCCard.DoesNotExist:
                     return JsonResponse({'status': 'error', 'message': 'Card not found'}, status=400)
+            
+            # Enforce payment method restrictions for top_up and issue_card
+            if action in ['top_up', 'issue_card']:
+                payment_method = data.get('payment_method', 'cash')
+                if payment_method not in ['cash', 'upi']:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Invalid payment method for top-up or card issuance. Only cash and UPI are allowed.'
+                    }, status=400)
+            
+            # Enforce NFC-only payment for outlets
+            if action == 'payment':
+                payment_method = data.get('payment_method', 'nfc')
+                if payment_method != 'nfc':
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Invalid payment method for outlet payment. Only NFC payments are allowed.'
+                    }, status=400)
             
             # Handle specific actions
             if action == 'issue_card':
@@ -625,6 +643,20 @@ def nfc_api(request):
                 amount = Decimal(data.get('amount', 0))
                 notes = data.get('notes', '')
                 
+                # Enforce that user is an outlet for payment
+                if not (request.user.is_authenticated and hasattr(request.user, 'outlet')):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Only outlet users can perform payments.'
+                    }, status=403)
+                
+                # Check if card is active
+                if not card.is_active:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'This card is inactive and cannot be used for payment.'
+                    }, status=400)
+                
                 # Check if card has sufficient balance
                 if card.balance < amount:
                     return JsonResponse({
@@ -634,11 +666,12 @@ def nfc_api(request):
                         'amount': float(amount)
                     }, status=400)
                 
-                # Create transaction record
+                # Create transaction record with enforced payment_method='nfc'
                 transaction = Transaction(
                     card=card,
                     card_identifier=card.card_id,
                     amount=amount,
+                    payment_method='nfc',  # Enforced NFC for outlet payments
                     notes=notes
                 )
                 

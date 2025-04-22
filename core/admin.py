@@ -174,16 +174,17 @@ class AnalyticsAdmin(admin.ModelAdmin):
                 created_at__range=(start_datetime, end_datetime)
             ).count()
             
-            # Get topup transactions (negative amounts)
+            # Get topup transactions (positive amounts)
             topups = Transaction.objects.filter(
                 timestamp__range=(start_datetime, end_datetime),
-                amount__lt=0  # Negative amounts are topups
+                amount__gt=0  # Positive amounts are topups
             )
             
-            # Get payment transactions (positive amounts)
+            # Get payment transactions (positive amounts, NFC only for outlet payments)
             payments = Transaction.objects.filter(
                 timestamp__range=(start_datetime, end_datetime),
-                amount__gt=0  # Positive amounts are payments
+                amount__gt=0,  # Positive amounts are payments
+                payment_method='nfc'  # Only count NFC payments for outlets
             )
             
             # Calculate totals
@@ -213,12 +214,13 @@ class AnalyticsAdmin(admin.ModelAdmin):
                     outlet_id = transaction.outlet.id
                     outlet_transactions[outlet_id]['count'] += 1
                     
-                    if transaction.amount < 0:  # Topup
-                        outlet_transactions[outlet_id]['topups'] += 1
-                        outlet_transactions[outlet_id]['topup_amount'] += abs(transaction.amount)
-                    else:  # Payment
-                        outlet_transactions[outlet_id]['payments'] += 1
-                        outlet_transactions[outlet_id]['payment_amount'] += transaction.amount
+            if transaction.amount < 0:  # Topup
+                outlet_transactions[outlet_id]['topups'] += 1
+                outlet_transactions[outlet_id]['topup_amount'] += abs(transaction.amount)
+            elif transaction.payment_method == 'nfc':  # Payment, only count NFC
+                outlet_transactions[outlet_id]['payments'] += 1
+                outlet_transactions[outlet_id]['payment_amount'] += transaction.amount
+
             
             # Create row for current date
             row = [
@@ -286,10 +288,11 @@ class AnalyticsAdmin(admin.ModelAdmin):
             amount__lt=0  # Negative amounts are topups
         )
         
-        # Get payment transactions (positive amounts)
+        # Get payment transactions (positive amounts, NFC only for outlet payments)
         payments = Transaction.objects.filter(
             timestamp__range=(start_datetime, end_datetime),
-            amount__gt=0  # Positive amounts are payments
+            amount__gt=0,  # Positive amounts are payments
+            payment_method='nfc'  # Only count NFC payments for outlets
         )
         
         # Calculate totals
@@ -322,9 +325,10 @@ class AnalyticsAdmin(admin.ModelAdmin):
                 if transaction.amount < 0:  # Topup
                     outlet_transactions[outlet_name]['topups'] += 1
                     outlet_transactions[outlet_name]['topup_amount'] += abs(transaction.amount)
-                else:  # Payment
+                elif transaction.payment_method == 'nfc':  # Payment, only count NFC
                     outlet_transactions[outlet_name]['payments'] += 1
                     outlet_transactions[outlet_name]['payment_amount'] += transaction.amount
+
         
         # Sort outlets by transaction count (descending)
         sorted_outlets = sorted(
@@ -376,8 +380,8 @@ class Analytics(Transaction):
 class PaymentCollectionAnalytics(Transaction):
     class Meta:
         proxy = True
-        verbose_name = 'Payment Collection Analytics'
-        verbose_name_plural = 'Payment Collection Analytics'
+        verbose_name = 'Collection Analytics'
+        verbose_name_plural = 'Collection Analytics'
 
 class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
     """Admin model for user-wise payment collection analytics view"""
@@ -429,7 +433,7 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         writer = csv.writer(response)
         
         # Create header row
-        header = ['User', 'User Type', 'Cash Top-ups', 'Cash Amount (₹)', 'UPI Top-ups', 'UPI Amount (₹)', 'Total Top-ups', 'Total Amount (₹)']
+        header = ['User', 'User Type', 'Cash Top-ups', 'Cash Amount (₹)', 'UPI Top-ups', 'UPI Amount (₹)', 'NFC Top-ups', 'NFC Amount (₹)', 'Total Top-ups', 'Total Amount (₹)']
         writer.writerow(header)
         
         # Calculate start and end datetime for the date range
@@ -439,7 +443,7 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         # Get all transactions in the date range
         transactions = Transaction.objects.filter(
             timestamp__range=(start_datetime, end_datetime),
-            amount__lt=0  # Only top-ups (negative amounts)
+            amount__gt=0  # Only top-ups (positive amounts)
         )
         
         # Group transactions by user
@@ -468,6 +472,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                         'cash_amount': 0,
                         'upi_topups': 0,
                         'upi_amount': 0,
+                        'nfc_topups': 0,
+                        'nfc_amount': 0,
                         'total_topups': 0,
                         'total_amount': 0
                     }
@@ -483,6 +489,9 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                 elif transaction.payment_method == 'upi':
                     user_data[user_id]['upi_topups'] += 1
                     user_data[user_id]['upi_amount'] += amount
+                elif transaction.payment_method == 'nfc':
+                    user_data[user_id]['nfc_topups'] += 1
+                    user_data[user_id]['nfc_amount'] += amount
         
         # Sort users by total amount (descending)
         sorted_users = sorted(
@@ -500,6 +509,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                 user['cash_amount'],
                 user['upi_topups'],
                 user['upi_amount'],
+                user['nfc_topups'],
+                user['nfc_amount'],
                 user['total_topups'],
                 user['total_amount']
             ])
@@ -535,7 +546,7 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         # Get all transactions in the date range
         transactions = Transaction.objects.filter(
             timestamp__range=(start_datetime, end_datetime),
-            amount__lt=0  # Only top-ups (negative amounts)
+            amount__gt=0  # Only top-ups (positive amounts)
         )
         
         # Group transactions by user
@@ -564,6 +575,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                         'cash_amount': 0,
                         'upi_topups': 0,
                         'upi_amount': 0,
+                        'nfc_topups': 0,
+                        'nfc_amount': 0,
                         'total_topups': 0,
                         'total_amount': 0
                     }
@@ -579,6 +592,9 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
                 elif transaction.payment_method == 'upi':
                     user_data[user_id]['upi_topups'] += 1
                     user_data[user_id]['upi_amount'] += amount
+                elif transaction.payment_method == 'nfc':
+                    user_data[user_id]['nfc_topups'] += 1
+                    user_data[user_id]['nfc_amount'] += amount
         
         # Sort users by total amount (descending)
         sorted_users = sorted(
@@ -592,8 +608,10 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
         total_cash_amount = sum(user['cash_amount'] for user in user_data.values())
         total_upi_topups = sum(user['upi_topups'] for user in user_data.values())
         total_upi_amount = sum(user['upi_amount'] for user in user_data.values())
-        total_topups = total_cash_topups + total_upi_topups
-        total_amount = total_cash_amount + total_upi_amount
+        total_nfc_topups = sum(user['nfc_topups'] for user in user_data.values())
+        total_nfc_amount = sum(user['nfc_amount'] for user in user_data.values())
+        total_topups = total_cash_topups + total_upi_topups + total_nfc_topups
+        total_amount = total_cash_amount + total_upi_amount + total_nfc_amount
         
         # Prepare context
         context = {
@@ -605,6 +623,8 @@ class PaymentCollectionAnalyticsAdmin(admin.ModelAdmin):
             'total_cash_amount': total_cash_amount,
             'total_upi_topups': total_upi_topups,
             'total_upi_amount': total_upi_amount,
+            'total_nfc_topups': total_nfc_topups,
+            'total_nfc_amount': total_nfc_amount,
             'total_topups': total_topups,
             'total_amount': total_amount,
         }

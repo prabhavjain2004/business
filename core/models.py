@@ -136,6 +136,7 @@ class Transaction(models.Model):
     PAYMENT_METHOD_CHOICES = (
         ('cash', 'Cash'),
         ('upi', 'UPI'),
+        ('nfc', 'NFC'),
     )
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
