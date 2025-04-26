@@ -715,125 +715,125 @@ def nfc_api(request):
             elif action == 'balance_inquiry':
                 action_description = f"Balance inquiry: Current balance is {card.balance}"
             
-            elif action == 'payment':
-                amount = Decimal(data.get('amount', 0))
-                notes = data.get('notes', '')
-                
-                # Enforce that user is an outlet for payment
-                if not (request.user.is_authenticated and hasattr(request.user, 'outlet')):
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Only outlet users can perform payments.'
-                    }, status=403)
-                
-                # Check if card is active
-                if not card.is_active:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'This card is inactive and cannot be used for payment.'
-                    }, status=400)
-                
-                # Check if card has sufficient balance
-                if card.balance < amount:
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': 'Insufficient balance',
-                        'balance': float(card.balance),
-                        'amount': float(amount)
-                    }, status=400)
-                
-                # Create transaction record with enforced payment_method='nfc'
-                transaction = Transaction(
-                    card=card,
-                    card_identifier=card.card_id,
-                    amount=amount,
-                    payment_method='nfc',  # Enforced NFC for outlet payments
-                    notes=notes
-                )
-                
-                # If user is authenticated, add user and outlet info
-                if request.user.is_authenticated:
-                    transaction.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        transaction.outlet = request.user.outlet
-                
-                # For AJAX requests from JavaScript, try to get the user from the session
-                elif 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
-                    # Get the session key from the request
-                    session_key = request.COOKIES.get('sessionid')
-                    if session_key:
-                        from django.contrib.sessions.models import Session
-                        from django.contrib.auth.models import User
-                        try:
-                            # Get the session
-                            session = Session.objects.get(session_key=session_key)
-                            # Get the user_id from the session
-                            user_id = session.get_decoded().get('_auth_user_id')
-                            if user_id:
-                                # Get the user
-                                user = User.objects.get(pk=user_id)
-                                transaction.user = user
-                                # If the user has an outlet, add it to the transaction
-                                if hasattr(user, 'outlet'):
-                                    transaction.outlet = user.outlet
-                        except (Session.DoesNotExist, User.DoesNotExist):
-                            pass
-                
-                # Store the previous balance
-                previous_balance = card.balance
-                
-                # Save transaction (this will update card balance in the save method)
-                transaction.save()
-                
-                # Ensure the status is set to completed and save again
-                transaction.status = 'completed'
-                transaction.save()
-                
-                # Verify the balance was updated correctly
-                if card.balance != previous_balance - amount:
-                    # If not, update it manually
-                    card.balance = max(Decimal('0.00'), previous_balance - amount)
-                    card.save()
-                    
-                    # Update transaction with correct balances
-                    transaction.previous_balance = previous_balance
-                    transaction.new_balance = card.balance
-                    transaction.save()
-                
-                action_description = f"Payment of {amount} processed. New balance: {card.balance}"
-                
-                # Add transaction info to response
-                response_data = {
-                    'status': 'success',
-                    'card_id': card.card_id,
-                    'secure_key': card.secure_key,
-                    'action': action,
-                    'transaction_id': str(transaction.id),
-                    'amount': float(amount),
-                    'previous_balance': float(transaction.previous_balance),
-                    'new_balance': float(transaction.new_balance),
-                    'timestamp': transaction.timestamp.isoformat()
-                }
-                
-                # Create log entry
-                log = NFCLog.objects.create(
-                    card=card,
-                    card_identifier=card.card_id,
-                    action=action_description,
-                    success=True,
-                    notes=f"Transaction ID: {transaction.id}"
-                )
-                
-                # If user is authenticated, add user and outlet info to log
-                if request.user.is_authenticated:
-                    log.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        log.outlet = request.user.outlet
-                    log.save()
-                
-                response_data['log_id'] = str(log.id)
-                
-                return JsonResponse(response_data)
+if action == 'payment':
+    amount = Decimal(data.get('amount', 0))
+    notes = data.get('notes', '')
+    
+    # Enforce that user is an outlet or outlet volunteer for payment
+    if not (request.user.is_authenticated and (hasattr(request.user, 'outlet') or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet_volunteer'))):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Only outlet users or outlet volunteers can perform payments.'
+        }, status=403)
+    
+    # Check if card is active
+    if not card.is_active:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'This card is inactive and cannot be used for payment.'
+        }, status=400)
+    
+    # Check if card has sufficient balance
+    if card.balance < amount:
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Insufficient balance',
+            'balance': float(card.balance),
+            'amount': float(amount)
+        }, status=400)
+    
+    # Create transaction record with enforced payment_method='nfc'
+    transaction = Transaction(
+        card=card,
+        card_identifier=card.card_id,
+        amount=amount,
+        payment_method='nfc',  # Enforced NFC for outlet payments
+        notes=notes
+    )
+    
+    # If user is authenticated, add user and outlet info
+    if request.user.is_authenticated:
+        transaction.user = request.user
+        if hasattr(request.user, 'outlet'):
+            transaction.outlet = request.user.outlet
+    
+    # For AJAX requests from JavaScript, try to get the user from the session
+    elif 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
+        # Get the session key from the request
+        session_key = request.COOKIES.get('sessionid')
+        if session_key:
+            from django.contrib.sessions.models import Session
+            from django.contrib.auth.models import User
+            try:
+                # Get the session
+                session = Session.objects.get(session_key=session_key)
+                # Get the user_id from the session
+                user_id = session.get_decoded().get('_auth_user_id')
+                if user_id:
+                    # Get the user
+                    user = User.objects.get(pk=user_id)
+                    transaction.user = user
+                    # If the user has an outlet, add it to the transaction
+                    if hasattr(user, 'outlet'):
+                        transaction.outlet = user.outlet
+            except (Session.DoesNotExist, User.DoesNotExist):
+                pass
+    
+    # Store the previous balance
+    previous_balance = card.balance
+    
+    # Save transaction (this will update card balance in the save method)
+    transaction.save()
+    
+    # Ensure the status is set to completed and save again
+    transaction.status = 'completed'
+    transaction.save()
+    
+    # Verify the balance was updated correctly
+    if card.balance != previous_balance - amount:
+        # If not, update it manually
+        card.balance = max(Decimal('0.00'), previous_balance - amount)
+        card.save()
+        
+        # Update transaction with correct balances
+        transaction.previous_balance = previous_balance
+        transaction.new_balance = card.balance
+        transaction.save()
+    
+    action_description = f"Payment of {amount} processed. New balance: {card.balance}"
+    
+    # Add transaction info to response
+    response_data = {
+        'status': 'success',
+        'card_id': card.card_id,
+        'secure_key': card.secure_key,
+        'action': action,
+        'transaction_id': str(transaction.id),
+        'amount': float(amount),
+        'previous_balance': float(transaction.previous_balance),
+        'new_balance': float(transaction.new_balance),
+        'timestamp': transaction.timestamp.isoformat()
+    }
+    
+    # Create log entry
+    log = NFCLog.objects.create(
+        card=card,
+        card_identifier=card.card_id,
+        action=action_description,
+        success=True,
+        notes=f"Transaction ID: {transaction.id}"
+    )
+    
+    # If user is authenticated, add user and outlet info to log
+    if request.user.is_authenticated:
+        log.user = request.user
+        if hasattr(request.user, 'outlet'):
+            log.outlet = request.user.outlet
+        log.save()
+    
+    response_data['log_id'] = str(log.id)
+    
+    return JsonResponse(response_data)
             
             else:
                 action_description = action
