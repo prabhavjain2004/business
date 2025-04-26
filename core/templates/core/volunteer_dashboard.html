@@ -19,12 +19,22 @@
                         </svg>
                         <span>Issue Card</span>
                     </a> -->
+                    {% if not can_accept_payment %}
                     <a href="{% url 'top_up' %}" class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex flex-col items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                         <span>Top-Up Card</span>
                     </a>
+                    {% else %}
+                    <a href="{% url 'payment' %}" class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3v3h6v-3c0-1.657-1.343-3-3-3z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a7 7 0 00-7 7v3a7 7 0 0014 0V9a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>Accept Payment</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             

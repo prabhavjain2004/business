@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Profile, Outlet, NFCCard, Volunteer
+from .models import Profile, Outlet, NFCCard, TopupVolunteer
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=False, help_text='Optional.')
@@ -101,28 +101,41 @@ class PaymentForm(forms.Form):
     )
 
 class VolunteerCreationForm(UserCreationForm):
+    VOLUNTEER_TYPE_CHOICES = (
+        ('topup_volunteer', 'Topup Volunteer'),
+        ('outlet_volunteer', 'Outlet Volunteer'),
+    )
+
+    volunteer_type = forms.ChoiceField(choices=VOLUNTEER_TYPE_CHOICES, required=True, label="Volunteer Type")
     full_name = forms.CharField(max_length=100, required=True)
     contact_number = forms.CharField(max_length=15, required=False)
     adhaar_card_no = forms.CharField(max_length=20, required=False)
 
     class Meta:
         model = User
-        fields = ('username', 'full_name', 'contact_number', 'adhaar_card_no', 'password1', 'password2')
+        fields = ('username', 'volunteer_type', 'full_name', 'contact_number', 'adhaar_card_no', 'password1', 'password2')
 
     def save(self, commit=True):
         user = super().save(commit=False)
         if commit:
             user.save()
-            # Create Volunteer profile
-            volunteer = Volunteer.objects.create(
-                user=user,
-                full_name=self.cleaned_data['full_name'],
-                contact_number=self.cleaned_data.get('contact_number', ''),
-                adhaar_card_no=self.cleaned_data.get('adhaar_card_no', '')
-            )
-            # Create or update Profile with user_type volunteer
-            from .models import Profile
+            from .models import Profile, TopupVolunteer, OutletVolunteer
+            volunteer_type = self.cleaned_data['volunteer_type']
+            if volunteer_type == 'topup_volunteer':
+                volunteer = TopupVolunteer.objects.create(
+                    user=user,
+                    full_name=self.cleaned_data['full_name'],
+                    contact_number=self.cleaned_data.get('contact_number', ''),
+                    adhaar_card_no=self.cleaned_data.get('adhaar_card_no', '')
+                )
+            elif volunteer_type == 'outlet_volunteer':
+                volunteer = OutletVolunteer.objects.create(
+                    user=user,
+                    full_name=self.cleaned_data['full_name'],
+                    contact_number=self.cleaned_data.get('contact_number', ''),
+                    adhaar_card_no=self.cleaned_data.get('adhaar_card_no', '')
+                )
             profile, created = Profile.objects.get_or_create(user=user)
-            profile.user_type = 'volunteer'
+            profile.user_type = volunteer_type
             profile.save()
         return user

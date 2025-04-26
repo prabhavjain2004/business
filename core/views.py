@@ -25,7 +25,7 @@ from .forms import (
 )
 from .models import (
     Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, 
-    Transaction, Volunteer
+    Transaction, TopupVolunteer
 )
 
 class SignUpForm(UserCreationForm):
@@ -78,8 +78,8 @@ def dashboard(request):
             })
         
         # If user is a volunteer
-        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer':
-            # Get transactions where this volunteer is the user
+        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'topup_volunteer':
+            # Get transactions where this topup volunteer is the user
             transactions = Transaction.objects.filter(
                 user=request.user,
                 amount__lt=0  # Only show top-ups (negative amounts)
@@ -94,9 +94,32 @@ def dashboard(request):
                 if transaction.timestamp:
                     transaction.timestamp = transaction.timestamp.astimezone(ist)
             
-            return render(request, 'core/volunteer_dashboard.html', {
+            return render(request, 'core/topup_volunteer_dashboard.html', {
                 'transactions': transactions,
                 'total_sales': total_collected
+            })
+        # If user is an outlet volunteer
+        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet_volunteer':
+            # Get transactions where this outlet volunteer is the user
+            transactions = Transaction.objects.filter(
+                user=request.user,
+                status='completed'
+            ).order_by('-timestamp')
+            
+            # Calculate total amount collected
+            total_collected = transactions.aggregate(total=Sum('amount'))['total'] or 0
+            
+            # Convert transaction timestamps to Indian Standard Time (IST)
+            ist = pytz.timezone('Asia/Kolkata')
+            for transaction in transactions:
+                if transaction.timestamp:
+                    transaction.timestamp = transaction.timestamp.astimezone(ist)
+            
+            # Render volunteer dashboard with payment access
+            return render(request, 'core/volunteer_dashboard.html', {
+                'transactions': transactions,
+                'total_sales': total_collected,
+                'can_accept_payment': True  # Add flag to enable payment link
             })
         
         # If user is neither admin, outlet, nor volunteer, show access denied
@@ -194,8 +217,9 @@ def create_volunteer(request):
     if request.method == 'POST':
         form = VolunteerCreationForm(request.POST)
         if form.is_valid():
+            volunteer_type = form.cleaned_data.get('volunteer_type')
             form.save()
-            messages.success(request, 'Volunteer created successfully!')
+            messages.success(request, f'{volunteer_type.replace("_", " ").title()} created successfully!')
             return redirect('admin_dashboard')
     else:
         form = VolunteerCreationForm()
@@ -280,18 +304,18 @@ def about_us_view(request):
 @login_required
 def issue_card_view(request):
     """View for the issue card page"""
-    # Check if user is admin or volunteer
-    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer')):
-        messages.error(request, 'Access denied. Only administrators or volunteers can issue cards.')
+    # Check if user is admin or topup volunteer
+    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'topup_volunteer')):
+        messages.error(request, 'Access denied. Only administrators or topup volunteers can issue cards.')
         return redirect('dashboard')
     return render(request, 'core/issue_card.html')
 
 @login_required
 def top_up_view(request):
     """View for the top-up page"""
-    # Check if user is admin or volunteer
-    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'volunteer')):
-        messages.error(request, 'Access denied. Only administrators or volunteers can top-up cards.')
+    # Check if user is admin or topup volunteer
+    if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'topup_volunteer')):
+        messages.error(request, 'Access denied. Only administrators or topup volunteers can top-up cards.')
         return redirect('dashboard')
     return render(request, 'core/top_up.html')
 

@@ -11,8 +11,22 @@ from decimal import Decimal
 USER_TYPE_CHOICES = (
     ('admin', 'Admin'),
     ('outlet', 'Outlet'),
-    ('volunteer', 'Volunteers'),
+    ('topup_volunteer', 'Topup Volunteers'),
+    ('outlet_volunteer', 'Outlet Volunteers'),
 )
+
+# New model for Outlet Volunteer
+class OutletVolunteer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=100)
+    contact_number = models.CharField(max_length=15, blank=True)
+    adhaar_card_no = models.CharField(max_length=20, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.full_name
 
 # Create your models here.
 class Profile(models.Model):
@@ -21,7 +35,7 @@ class Profile(models.Model):
     last_name = models.CharField(max_length=30, blank=True)
     email = models.EmailField(max_length=254, blank=True)
     mobile_no = models.CharField(max_length=15, blank=True)
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='outlet')
+    user_type = models.CharField(max_length=16, choices=USER_TYPE_CHOICES, default='outlet')
 
     def __str__(self):
         return self.user.username
@@ -38,7 +52,7 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
             profile.save()
         # Set user_type to 'volunteer' if username starts with 'volunteer_' (example logic)
         elif instance.username.startswith('volunteer_'):
-            profile.user_type = 'volunteer'
+            profile.user_type = 'topup_volunteer'
             profile.save()
     # Update existing profile
     else:
@@ -50,7 +64,7 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
                 profile.save()
             # Set user_type to 'volunteer' if username starts with 'volunteer_' (example logic)
             elif instance.username.startswith('volunteer_') and profile.user_type != 'volunteer':
-                profile.user_type = 'volunteer'
+                profile.user_type = 'topup_volunteer'
                 profile.save()
         except Profile.DoesNotExist:
             # Create profile if it doesn't exist
@@ -178,7 +192,7 @@ class Transaction(models.Model):
         super().save(*args, **kwargs)
 
 # New model for Volunteer
-class Volunteer(models.Model):
+class TopupVolunteer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=15, blank=True)
