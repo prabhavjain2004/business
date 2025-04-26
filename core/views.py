@@ -25,7 +25,7 @@ from .forms import (
 )
 from .models import (
     Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, 
-    Transaction, TopupVolunteer
+    Transaction, TopupVolunteer, OutletVolunteer
 )
 
 class SignUpForm(UserCreationForm):
@@ -49,14 +49,66 @@ def signup(request):
 
 @login_required
 def dashboard(request):
+    # Debug logging for user and profile info
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"User: {request.user}, Authenticated: {request.user.is_authenticated}")
+    try:
+        profile = request.user.profile
+        logger.debug(f"User profile found: {profile}, user_type: {profile.user_type}")
+    except Profile.DoesNotExist:
+        logger.debug("User profile does not exist")
+        messages.error(request, 'Access denied. You do not have a valid profile.')
+        return redirect('logout')
+
     # Check user type
     try:
+        # Debug log the user type
+        logger.debug(f"User type: {profile.user_type}")
+        
         # If user is admin, redirect to management dashboard
         if request.user.is_staff:
-            return redirect('admin_dashboard')  # This still uses the name 'admin_dashboard' but points to /management/dashboard/
+            logger.debug("User is staff, redirecting to admin dashboard")
+            return redirect('admin_dashboard')
         
+        # If user is a topup volunteer
+        elif profile.user_type == 'topup_volunteer':
+            logger.debug("User is topup volunteer, preparing dashboard")
+            # Verify TopupVolunteer record exists
+            try:
+                volunteer = TopupVolunteer.objects.get(user=request.user)
+                if not volunteer.is_active:
+                    logger.debug("Topup volunteer is not active")
+                    messages.error(request, 'Your account is not active. Please contact an administrator.')
+                    return redirect('logout')
+            except TopupVolunteer.DoesNotExist:
+                logger.debug("TopupVolunteer record not found")
+                messages.error(request, 'Invalid volunteer account. Please contact an administrator.')
+                return redirect('logout')
+                
+            # Get transactions where this topup volunteer is the user
+            transactions = Transaction.objects.filter(
+                user=request.user,
+                payment_method__in=['cash', 'upi']  # Only show cash/upi top-ups
+            ).order_by('-timestamp')
+            
+            # Calculate total amount collected
+            total_collected = transactions.aggregate(total=Sum('amount'))['total'] or 0
+            
+            # Convert transaction timestamps to Indian Standard Time (IST)
+            ist = pytz.timezone('Asia/Kolkata')
+            for transaction in transactions:
+                if transaction.timestamp:
+                    transaction.timestamp = transaction.timestamp.astimezone(ist)
+            
+            logger.debug(f"Rendering topup volunteer dashboard with {transactions.count()} transactions")
+            return render(request, 'core/topup_volunteer_dashboard.html', {
+                'transactions': transactions,
+                'total_sales': total_collected
+            })
+            
         # If user is an outlet
-        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet':
+        elif profile.user_type == 'outlet':
             # Get outlet transactions
             if hasattr(request.user, 'outlet'):
                 transactions = Transaction.objects.filter(outlet=request.user.outlet).order_by('-timestamp')
@@ -77,29 +129,8 @@ def dashboard(request):
                 'total_sales': total_sales
             })
         
-        # If user is a volunteer
-        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'topup_volunteer':
-            # Get transactions where this topup volunteer is the user
-            transactions = Transaction.objects.filter(
-                user=request.user,
-                amount__lt=0  # Only show top-ups (negative amounts)
-            ).order_by('-timestamp')
-            
-            # Calculate total amount collected
-            total_collected = abs(transactions.aggregate(total=Sum('amount'))['total'] or 0)
-            
-            # Convert transaction timestamps to Indian Standard Time (IST)
-            ist = pytz.timezone('Asia/Kolkata')
-            for transaction in transactions:
-                if transaction.timestamp:
-                    transaction.timestamp = transaction.timestamp.astimezone(ist)
-            
-            return render(request, 'core/topup_volunteer_dashboard.html', {
-                'transactions': transactions,
-                'total_sales': total_collected
-            })
         # If user is an outlet volunteer
-        elif hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet_volunteer':
+        elif profile.user_type == 'outlet_volunteer':
             # Get transactions where this outlet volunteer is the user
             transactions = Transaction.objects.filter(
                 user=request.user,
@@ -262,8 +293,29 @@ def custom_login(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            login(request, user)
-            return redirect('dashboard')
+            # Check if user has a profile and is a topup volunteer
+            try:
+                profile = user.profile
+                if profile.user_type == 'topup_volunteer':
+                    # Verify TopupVolunteer record exists and is active
+                    try:
+                        volunteer = TopupVolunteer.objects.get(user=user)
+                        if volunteer.is_active:
+                            login(request, user)
+                            return redirect('dashboard')
+                        else:
+                            messages.error(request, 'Your account is not active. Please contact an administrator.')
+                            return render(request, 'core/login.html')
+                    except TopupVolunteer.DoesNotExist:
+                        messages.error(request, 'Invalid volunteer account. Please contact an administrator.')
+                        return render(request, 'core/login.html')
+                else:
+                    # For non-volunteer users, proceed with normal login
+                    login(request, user)
+                    return redirect('dashboard')
+            except Profile.DoesNotExist:
+                messages.error(request, 'Your account does not have a valid profile. Please contact an administrator.')
+                return render(request, 'core/login.html')
         else:
             messages.error(request, 'Invalid username or password.')
     

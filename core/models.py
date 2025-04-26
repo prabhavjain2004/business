@@ -43,38 +43,16 @@ class Profile(models.Model):
 # Signal to create/update user profile
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
-    # Create a new profile if a new user is created
     if created:
         profile = Profile.objects.create(user=instance)
-        # Set user_type to 'admin' if user is staff
-        if instance.is_staff:
-            profile.user_type = 'admin'
-            profile.save()
-        # Set user_type to 'volunteer' if username starts with 'volunteer_' (example logic)
-        elif instance.username.startswith('volunteer_'):
-            profile.user_type = 'topup_volunteer'
-            profile.save()
-    # Update existing profile
     else:
         try:
             profile = instance.profile
-            # Set user_type to 'admin' if user is staff
-            if instance.is_staff and profile.user_type != 'admin':
-                profile.user_type = 'admin'
-                profile.save()
-            # Set user_type to 'volunteer' if username starts with 'volunteer_' (example logic)
-            elif instance.username.startswith('volunteer_') and profile.user_type != 'volunteer':
-                profile.user_type = 'topup_volunteer'
-                profile.save()
         except Profile.DoesNotExist:
-            # Create profile if it doesn't exist
             profile = Profile.objects.create(user=instance)
-            if instance.is_staff:
-                profile.user_type = 'admin'
-                profile.save()
-            elif instance.username.startswith('volunteer_'):
-                profile.user_type = 'volunteer'
-                profile.save()
+    if instance.is_staff:
+        profile.user_type = 'admin'
+        profile.save()
 
 class Outlet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

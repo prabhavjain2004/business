@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Topup Volunteer Dashboard - TapNex{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-green-600 mb-8">Topup Volunteer Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Quick Actions Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-green-600 mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a href="{% url 'top_up' %}" class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>Top-Up Card</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Stats Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-green-600 mb-4">Your Activity</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-green-100 p-4 rounded-lg">
+                        <p class="text-sm text-green-600">Total Top-Ups</p>
+                        <p class="text-2xl font-bold text-green-800">{{ total_sales|default:"0" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold text-green-600 mb-4">Recent Top-Up Transactions</h2>
+            
+            {% if transactions %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Card ID</th>
+                            <th class="py-3 px-6 text-right">Amount</th>
+                            <th class="py-3 px-6 text-center">Payment Method</th>
+                            <th class="py-3 px-6 text-center">Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm">
+                        {% for transaction in transactions %}
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-6 text-left">{{ transaction.card_identifier }}</td>
+                            <td class="py-3 px-6 text-right">
+                                <span class="text-green-600">₹{{ transaction.amount|floatformat:2|cut:"-" }}</span>
+                            </td>
+                            <td class="py-3 px-6 text-center">
+                                {% if transaction.payment_method == 'cash' %}
+                                <span class="bg-yellow-200 text-yellow-700 py-1 px-3 rounded-full text-xs">Cash</span>
+                                {% else %}
+                                <span class="bg-purple-200 text-purple-700 py-1 px-3 rounded-full text-xs">UPI</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-6 text-center">{{ transaction.timestamp|date:"d M Y, h:i A" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="bg-gray-100 p-4 rounded-lg text-center">
+                <p class="text-gray-600">No top-up transactions found.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Help Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-green-600 mb-4">Need Help?</h2>
+            <p class="text-gray-600 mb-4">If you need assistance with any tasks or have questions, please contact the administrator.</p>
+            <div class="flex space-x-4">
+                <a href="{% url 'help' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                    View Help Guide
+                </a>
+                <a href="{% url 'contact' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    Contact Support
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

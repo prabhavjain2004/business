@@ -328,3 +328,28 @@ admin.site.register(PaymentCollectionAnalytics, PaymentCollectionAnalyticsAdmin)
 # Register volunteers
 admin.site.register(TopupVolunteer)
 admin.site.register(OutletVolunteer)
+
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'user_type', 'email', 'mobile_no')
+    search_fields = ('user__username', 'email', 'mobile_no')
+    list_filter = ('user_type',)
+
+class OutletAdmin(admin.ModelAdmin):
+    list_display = ('outlet_name', 'contact_person', 'phone_number', 'is_active')
+    search_fields = ('outlet_name', 'contact_person', 'phone_number')
+    list_filter = ('is_active',)
+
+class NFCCardAdmin(admin.ModelAdmin):
+    list_display = ('card_id', 'name', 'customer_name', 'balance', 'is_active')
+    search_fields = ('card_id', 'name', 'customer_name')
+    list_filter = ('is_active',)
+
+class NFCLogAdmin(admin.ModelAdmin):
+    list_display = ('card_identifier', 'outlet', 'user', 'timestamp', 'action', 'success')
+    search_fields = ('card_identifier', 'action', 'notes')
+    list_filter = ('success', 'timestamp')
+
+admin.site.register(Profile, ProfileAdmin)
+admin.site.register(Outlet, OutletAdmin)
+admin.site.register(NFCCard, NFCCardAdmin)
+admin.site.register(NFCLog, NFCLogAdmin)
