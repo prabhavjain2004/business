@@ -110,10 +110,25 @@ class VolunteerCreationForm(UserCreationForm):
     full_name = forms.CharField(max_length=100, required=True)
     contact_number = forms.CharField(max_length=15, required=False)
     adhaar_card_no = forms.CharField(max_length=20, required=False)
+    outlet = forms.ModelChoiceField(queryset=None, required=False, label="Outlet")
 
     class Meta:
         model = User
-        fields = ('username', 'volunteer_type', 'full_name', 'contact_number', 'adhaar_card_no', 'password1', 'password2')
+        fields = ('username', 'volunteer_type', 'full_name', 'contact_number', 'adhaar_card_no', 'outlet', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Outlet
+        self.fields['outlet'].queryset = Outlet.objects.filter(is_active=True)
+        self.fields['outlet'].widget.attrs.update({'class': 'form-input'})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        volunteer_type = cleaned_data.get('volunteer_type')
+        outlet = cleaned_data.get('outlet')
+        if volunteer_type == 'outlet_volunteer' and not outlet:
+            self.add_error('outlet', 'This field is required for Outlet Volunteers.')
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -133,7 +148,8 @@ class VolunteerCreationForm(UserCreationForm):
                     user=user,
                     full_name=self.cleaned_data['full_name'],
                     contact_number=self.cleaned_data.get('contact_number', ''),
-                    adhaar_card_no=self.cleaned_data.get('adhaar_card_no', '')
+                    adhaar_card_no=self.cleaned_data.get('adhaar_card_no', ''),
+                    outlet=self.cleaned_data.get('outlet')
                 )
             profile, created = Profile.objects.get_or_create(user=user)
             profile.user_type = volunteer_type

@@ -866,6 +866,17 @@ if action == 'payment':
             if action == 'balance_inquiry':
                 response_data['balance'] = float(card.balance)
                 response_data['customer_name'] = card.customer_name
+                
+                # Add transactions related to this card: amount, timestamp, outlet name
+                transactions = Transaction.objects.filter(card=card).order_by('-timestamp')[:10]
+                transaction_list = []
+                for txn in transactions:
+                    transaction_list.append({
+                        'amount': float(txn.amount),
+                        'timestamp': txn.timestamp.isoformat() if txn.timestamp else None,
+                        'outlet_name': txn.outlet.outlet_name if txn.outlet else None
+                    })
+                response_data['transactions'] = transaction_list
             
             return JsonResponse(response_data)
             

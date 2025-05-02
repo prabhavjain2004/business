@@ -21,6 +21,7 @@ class OutletVolunteer(models.Model):
     full_name = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=15, blank=True)
     adhaar_card_no = models.CharField(max_length=20, blank=True)
+    outlet = models.ForeignKey('Outlet', on_delete=models.CASCADE, related_name='volunteers')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
