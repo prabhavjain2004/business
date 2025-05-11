@@ -9,6 +9,7 @@ from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count
+from django.utils.timezone import now
 import json
 import uuid
 import random
