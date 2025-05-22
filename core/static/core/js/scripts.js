@@ -1,6 +1,5 @@
 /**
  * Modern scripts for the TapNex application
- * All animations and delays removed
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -15,56 +14,94 @@ function initializeTooltips() {
     const tooltips = document.querySelectorAll('[data-tooltip]');
     
     tooltips.forEach(tooltip => {
-        const tooltipText = tooltip.getAttribute('data-tooltip');
-        const tooltipElement = document.createElement('div');
-        tooltipElement.classList.add('tooltip-text');
-        tooltipElement.textContent = tooltipText;
-        
-        tooltip.classList.add('tech-tooltip');
-        tooltip.appendChild(tooltipElement);
+        try {
+            const tooltipText = tooltip.getAttribute('data-tooltip');
+            if (!tooltipText) {
+                console.warn('Tooltip element found without tooltip text');
+                return;
+            }
+
+            const tooltipElement = document.createElement('div');
+            tooltipElement.classList.add('tooltip-text');
+            tooltipElement.textContent = tooltipText;
+            
+            tooltip.classList.add('tech-tooltip');
+            tooltip.appendChild(tooltipElement);
+        } catch (error) {
+            console.error('Error initializing tooltip:', error);
+        }
     });
 }
 
 /**
- * Initialize dropdown menus
+ * Initialize dropdown menus with improved event handling
  */
 function initializeDropdowns() {
     const dropdownToggles = document.querySelectorAll('[data-dropdown-toggle]');
+    let openDropdown = null;
     
+    // Single document click listener for all dropdowns
+    const documentClickHandler = (e) => {
+        if (openDropdown && !openDropdown.contains(e.target)) {
+            closeDropdown(openDropdown);
+        }
+    };
+
+    // Add single event listener for document
+    document.addEventListener('click', documentClickHandler);
+
+    function closeDropdown(dropdown) {
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('block');
+            openDropdown = null;
+        }
+    }
+
+    function openDropdown(dropdown) {
+        if (openDropdown) {
+            closeDropdown(openDropdown);
+        }
+        dropdown.classList.remove('hidden');
+        dropdown.classList.add('block');
+        openDropdown = dropdown;
+    }
+
     dropdownToggles.forEach(toggle => {
-        const targetId = toggle.getAttribute('data-dropdown-toggle');
-        const target = document.getElementById(targetId);
-        
-        if (target) {
+        try {
+            const targetId = toggle.getAttribute('data-dropdown-toggle');
+            if (!targetId) {
+                console.warn('Dropdown toggle found without target ID');
+                return;
+            }
+
+            const target = document.getElementById(targetId);
+            if (!target) {
+                console.warn(`Dropdown target not found: ${targetId}`);
+                return;
+            }
+
+            // Initialize dropdown state
             target.classList.add('hidden');
             
+            // Add click handler to toggle
             toggle.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
                 if (target.classList.contains('hidden')) {
-                    // Close any open dropdowns first
-                    document.querySelectorAll('[data-dropdown].block').forEach(dropdown => {
-                        dropdown.classList.add('hidden');
-                        dropdown.classList.remove('block');
-                    });
-                    
-                    // Open this dropdown
-                    target.classList.remove('hidden');
-                    target.classList.add('block');
+                    openDropdown(target);
                 } else {
-                    target.classList.add('hidden');
-                    target.classList.remove('block');
+                    closeDropdown(target);
                 }
             });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', () => {
-                if (!target.classList.contains('hidden')) {
-                    target.classList.add('hidden');
-                    target.classList.remove('block');
-                }
-            });
+        } catch (error) {
+            console.error('Error initializing dropdown:', error);
         }
     });
+
+    // Cleanup function for removing event listeners
+    return function cleanup() {
+        document.removeEventListener('click', documentClickHandler);
+    };
 }
