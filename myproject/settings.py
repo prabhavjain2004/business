@@ -86,12 +86,12 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('ENGINE'),
-        'NAME': os.getenv('NAME'),
-        'USER': 'postgres.etwmwzszdahgpyzzphyk',
-        'PASSWORD': os.getenv('PASSWORD'),
-        'HOST': os.getenv('HOST'),
-        'PORT': os.getenv('PORT'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('dbname'),
+        'USER': os.getenv('user'),
+        'PASSWORD': os.getenv('password'),
+        'HOST': os.getenv('host'),
+        'PORT': os.getenv('port'),
     }
 }
 
@@ -146,3 +146,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'dashboard'  # Redirect users to dashboard after login
 LOGIN_URL = 'login'  # URL to redirect to when login is required
 LOGOUT_REDIRECT_URL = 'home'  # Redirect users to home page after logout
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')

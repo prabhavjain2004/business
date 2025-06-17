@@ -26,8 +26,81 @@ from .forms import (
 )
 from .models import (
     Profile, Outlet, USER_TYPE_CHOICES, NFCCard, NFCLog, 
-    Transaction, TopupVolunteer, OutletVolunteer
+    Transaction, TopupVolunteer, OutletVolunteer, Customer
 )
+from .forms import CustomerForm
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib import messages
+
+# Existing imports unchanged...
+
+def customer_details_view(request):
+    email_verified = False
+    show_verification = False
+
+    if request.method == 'POST':
+        form = CustomerForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            customer, created = Customer.objects.get_or_create(email=email)
+            if created:
+                customer.name = form.cleaned_data['name']
+                customer.mobile_no = form.cleaned_data['mobile_no']
+                code = customer.generate_new_verification_code()
+                # Send verification email
+                send_mail(
+                    'Your Email Verification Code',
+                    f'Your verification code is: {code}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+                messages.info(request, 'Verification code sent to your email.')
+                show_verification = True
+            else:
+                if customer.email_verified:
+                    email_verified = True
+                else:
+                    # Regenerate and resend verification code for existing unverified customer
+                    code = customer.generate_new_verification_code()
+                    send_mail(
+                        'Your Email Verification Code',
+                        f'Your verification code is: {code}',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        fail_silently=False,
+                    )
+                    messages.info(request, 'Verification code resent to your email.')
+                    show_verification = True
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = CustomerForm()
+
+    return render(request, 'core/customer_details.html', {
+        'form': form,
+        'email_verified': email_verified,
+        'show_verification': show_verification,
+    })
+
+def verify_email_view(request):
+    if request.method == 'POST':
+        code = request.POST.get('verification_code', '').strip()
+        email = request.POST.get('email', '').strip()
+        try:
+            customer = Customer.objects.get(email=email)
+            if customer.email_verification_code == code:
+                customer.email_verified = True
+                customer.email_verification_code = ''
+                customer.save()
+                messages.success(request, 'Email verified successfully!')
+                return redirect('customer_details')
+            else:
+                messages.error(request, 'Invalid verification code.')
+        except Customer.DoesNotExist:
+            messages.error(request, 'Customer not found.')
+    return redirect('customer_details')
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True)

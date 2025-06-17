@@ -1,7 +1,31 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Profile, Outlet, NFCCard, TopupVolunteer
+from .models import Profile, Outlet, NFCCard, TopupVolunteer, Customer
+
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ['name', 'mobile_no', 'email']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500',
+                'required': True
+            }),
+            'mobile_no': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500',
+                'required': True
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500',
+                'required': True
+            })
+        }
+        labels = {
+            'name': 'Full Name',
+            'mobile_no': 'Mobile Number',
+            'email': 'Email Address'
+        }
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=False, help_text='Optional.')

@@ -7,6 +7,22 @@ import random
 import string
 from decimal import Decimal
 
+def generate_verification_code():
+    """Generate a 6-digit verification code"""
+    return ''.join(random.choices('0123456789', k=6))
+
+def generate_unique_id(model_class, length=7):
+    """Generate a unique numeric ID of specified length"""
+    while True:
+        # Generate a random number of specified length
+        unique_id = ''.join(random.choices(string.digits, k=length))
+        # Ensure it starts with a non-zero digit
+        if unique_id[0] == '0':
+            unique_id = str(random.randint(1, 9)) + unique_id[1:]
+        # Check if this ID already exists
+        if not model_class.objects.filter(unique_id=unique_id).exists():
+            return unique_id
+
 # User type choices
 USER_TYPE_CHOICES = (
     ('admin', 'Admin'),
@@ -15,19 +31,39 @@ USER_TYPE_CHOICES = (
     ('outlet_volunteer', 'Outlet Volunteers'),
 )
 
+class Customer(models.Model):
+    """Model for storing customer details"""
+    name = models.CharField(max_length=100)
+    mobile_no = models.CharField(max_length=15)
+    email = models.EmailField(unique=True)
+    email_verified = models.BooleanField(default=False)
+    email_verification_code = models.CharField(max_length=6, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
+    
+    def generate_new_verification_code(self):
+        """Generate and save a new verification code"""
+        self.email_verification_code = generate_verification_code()
+        self.save()
+        return self.email_verification_code
+
 # New model for Outlet Volunteer
 class OutletVolunteer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    unique_id = models.CharField(max_length=7, unique=True, blank=True, help_text="Unique 7-digit identifier")
     full_name = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=15, blank=True)
     adhaar_card_no = models.CharField(max_length=20, blank=True)
-    outlet = models.ForeignKey('Outlet', on_delete=models.CASCADE, related_name='volunteers')
+    outlet = models.ForeignKey('Outlet', on_delete=models.CASCADE, related_name='volunteers', null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.full_name
+        return f"{self.full_name} ({self.unique_id})"
 
 # Create your models here.
 class Profile(models.Model):
@@ -57,6 +93,7 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
 
 class Outlet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    unique_id = models.CharField(max_length=7, unique=True, blank=True, help_text="Unique 7-digit identifier")
     outlet_name = models.CharField(max_length=100)
     address = models.TextField(blank=True)
     contact_person = models.CharField(max_length=100, blank=True)
@@ -66,7 +103,7 @@ class Outlet(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.outlet_name
+        return f"{self.outlet_name} ({self.unique_id})"
 
 class NFCCard(models.Model):
     """Model for storing NFC card information"""
@@ -173,6 +210,7 @@ class Transaction(models.Model):
 # New model for Volunteer
 class TopupVolunteer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    unique_id = models.CharField(max_length=7, unique=True, blank=True, help_text="Unique 7-digit identifier")
     full_name = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=15, blank=True)
     adhaar_card_no = models.CharField(max_length=20, blank=True)
@@ -181,4 +219,25 @@ class TopupVolunteer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.full_name
+        return f"{self.full_name} ({self.unique_id})"
+
+# Signal to generate unique_id for Outlet
+@receiver(pre_save, sender=Outlet)
+def ensure_outlet_unique_id(sender, instance, **kwargs):
+    """Ensure Outlet has a unique_id before saving"""
+    if not instance.unique_id:
+        instance.unique_id = generate_unique_id(Outlet)
+
+# Signal to generate unique_id for TopupVolunteer
+@receiver(pre_save, sender=TopupVolunteer)
+def ensure_topup_volunteer_unique_id(sender, instance, **kwargs):
+    """Ensure TopupVolunteer has a unique_id before saving"""
+    if not instance.unique_id:
+        instance.unique_id = generate_unique_id(TopupVolunteer)
+
+# Signal to generate unique_id for OutletVolunteer
+@receiver(pre_save, sender=OutletVolunteer)
+def ensure_outlet_volunteer_unique_id(sender, instance, **kwargs):
+    """Ensure OutletVolunteer has a unique_id before saving"""
+    if not instance.unique_id:
+        instance.unique_id = generate_unique_id(OutletVolunteer)
