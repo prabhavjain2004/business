@@ -76,4 +76,7 @@ urlpatterns = [
         path('terms-of-service/', views.terms_of_service_view, name='terms_of_service'),
         path('about-us/', views.about_us_view, name='about_us'),
     ])),
+    
+    # API routes
+    path('api/get_customer_details/', views.get_customer_details_by_id, name='get_customer_details_by_id'),
 ]

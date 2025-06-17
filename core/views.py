@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 from django.db.models import Sum, Count
 from django.utils.timezone import now
 import json
@@ -38,8 +39,64 @@ from django.contrib import messages
 def customer_details_view(request):
     email_verified = False
     show_verification = False
+    show_confirmation = False
+    customer_data = None
+    customer_id = None
+    qr_code_data = None
 
-    if request.method == 'POST':
+    # Check for confirmation state in session
+    if request.session.get('customer_confirm_pending'):
+        customer_data = request.session.get('customer_confirm_data')
+        show_confirmation = True
+        if request.method == 'POST' and 'final_submit' in request.POST:
+            # Final submit: mark customer as verified and generate ID
+            email = customer_data['email']
+            customer = Customer.objects.get(email=email)
+            customer.email_verified = True
+            customer.email_verification_code = ''
+            customer.save()
+            # Generate customer_id (random no.)
+            customer_id = customer.id  # or use a custom field if needed
+            # Generate QR code (not saved, just generated on the fly)
+            import qrcode
+            from io import BytesIO
+            import base64
+            from django.core.mail import EmailMessage
+            qr = qrcode.make(str(customer_id))
+            buffer = BytesIO()
+            qr.save(buffer, format='PNG')
+            buffer.seek(0)
+            # Prepare QR code as base64 for template
+            qr_code_data = 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode('utf-8')
+            # Send QR code to email
+            email_message = EmailMessage(
+                'Your Customer QR Code',
+                'Attached is your customer QR code. Use it for card issuing.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+            )
+            buffer.seek(0)
+            email_message.attach('customer_qr.png', buffer.read(), 'image/png')
+            email_message.send(fail_silently=True)
+            # Clear session
+            del request.session['customer_confirm_pending']
+            del request.session['customer_confirm_data']
+            # Render success page with QR and ID
+            return render(request, 'core/customer_success.html', {
+                'customer_id': customer_id,
+                'qr_code_data': qr_code_data,
+            })
+        else:
+            return render(request, 'core/customer_details.html', {
+                'show_confirmation': show_confirmation,
+                'customer_data': customer_data,
+                'form': CustomerForm(initial=customer_data),
+                'email_verified': False,
+                'show_verification': False,
+                'customer_id': None,
+            })
+
+    if request.method == 'POST' and not show_confirmation:
         form = CustomerForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -48,7 +105,6 @@ def customer_details_view(request):
                 customer.name = form.cleaned_data['name']
                 customer.mobile_no = form.cleaned_data['mobile_no']
                 code = customer.generate_new_verification_code()
-                # Send verification email
                 send_mail(
                     'Your Email Verification Code',
                     f'Your verification code is: {code}',
@@ -62,7 +118,6 @@ def customer_details_view(request):
                 if customer.email_verified:
                     email_verified = True
                 else:
-                    # Regenerate and resend verification code for existing unverified customer
                     code = customer.generate_new_verification_code()
                     send_mail(
                         'Your Email Verification Code',
@@ -82,6 +137,9 @@ def customer_details_view(request):
         'form': form,
         'email_verified': email_verified,
         'show_verification': show_verification,
+        'show_confirmation': show_confirmation,
+        'customer_data': customer_data,
+        'customer_id': customer_id,
     })
 
 def verify_email_view(request):
@@ -91,10 +149,13 @@ def verify_email_view(request):
         try:
             customer = Customer.objects.get(email=email)
             if customer.email_verification_code == code:
-                customer.email_verified = True
-                customer.email_verification_code = ''
-                customer.save()
-                messages.success(request, 'Email verified successfully!')
+                # Store customer data in session for confirmation
+                request.session['customer_confirm_pending'] = True
+                request.session['customer_confirm_data'] = {
+                    'name': customer.name,
+                    'mobile_no': customer.mobile_no,
+                    'email': customer.email,
+                }
                 return redirect('customer_details')
             else:
                 messages.error(request, 'Invalid verification code.')
@@ -964,3 +1025,53 @@ def nfc_api(request):
         'status': 'ready',
         'message': 'NFC API is ready. Send POST requests with card_id and action.'
     })
+
+def generate_customer_qr(request, customer_id):
+    """Generate a QR code for a customer ID"""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(str(customer_id))
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type="image/png")
+
+@csrf_exempt
+def get_customer_by_id(request, customer_id):
+    """API endpoint to fetch customer details by customer_id (random number)"""
+    from .models import Profile  # or your customer model
+    try:
+        customer = Profile.objects.get(random_id=customer_id)
+        data = {
+            'name': customer.name,
+            'mobile_no': customer.mobile_no,
+            'email': customer.email,
+            'customer_id': customer.random_id,
+        }
+        return JsonResponse({'status': 'success', 'customer': data})
+    except Profile.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Customer not found'}, status=404)
+
+@require_GET
+@csrf_exempt
+def get_customer_details_by_id(request):
+    """API endpoint to fetch customer details by customer_id (random number)"""
+    customer_id = request.GET.get('customer_id')
+    if not customer_id:
+        return JsonResponse({'error': 'Customer ID required'}, status=400)
+    try:
+        profile = Profile.objects.get(random_no=customer_id)
+        data = {
+            'name': profile.name,
+            'mobile': profile.mobile_no,
+            'email': profile.email,
+        }
+        return JsonResponse({'success': True, 'customer': data})
+    except Profile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)

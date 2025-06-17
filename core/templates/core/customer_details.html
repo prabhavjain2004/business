@@ -16,7 +16,25 @@
     </div>
     {% endif %}
 
-    {% if not email_verified %}
+    {# Confirmation step after email verification #}
+    {% if show_confirmation %}
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Confirm Your Details</h2>
+        <div class="bg-gray-50 p-4 rounded-lg shadow mb-4">
+            <p><strong>Name:</strong> {{ customer_data.name }}</p>
+            <p><strong>Mobile Number:</strong> {{ customer_data.mobile_no }}</p>
+            <p><strong>Email:</strong> {{ customer_data.email }}</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="final_submit" value="1" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Submit
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if not email_verified and not show_confirmation %}
     <form method="post" class="space-y-6">
         {% csrf_token %}
         {% if form.non_field_errors %}
@@ -48,38 +66,40 @@
             <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
             {% endif %}
         </div>
-        
-        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            Submit
-        </button>
+        <div class="flex justify-center">
+            <button type="submit" name="verify_email" value="1" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Verify Email
+            </button>
+        </div>
     </form>
     {% endif %}
 
-    {% if show_verification %}
+    {% if show_verification and not show_confirmation %}
     <form method="post" class="space-y-6" action="{% url 'verify_email' %}">
         {% csrf_token %}
         <input type="hidden" name="email" value="{{ form.email.value }}">
         <div>
-            <label for="verification_code" class="block text-sm font-medium text-gray-700">Enter Verification Code</label>
-            <input type="text" name="verification_code" id="verification_code" required 
-                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                   placeholder="Enter the 6-digit code sent to your email">
-            <p class="mt-2 text-sm text-gray-500">A verification code has been sent to {{ form.email.value }}</p>
+            <label for="verification_code" class="block text-sm font-medium text-gray-700">Verification Code</label>
+            <input type="text" name="verification_code" id="verification_code" class="w-full p-2 border border-gray-300 rounded-md" required>
         </div>
-        
         <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            Verify Email
+            Verify
         </button>
     </form>
     {% endif %}
 
-    {% if email_verified %}
+    {% if email_verified and not show_confirmation %}
     <div class="text-center">
         <div class="mb-4 text-green-600">
-            <i class="fas fa-check-circle text-5xl"></i>
+            <!-- Success message here if needed -->
         </div>
         <h2 class="text-2xl font-bold text-gray-800 mb-2">Email Verified Successfully!</h2>
         <p class="text-gray-600">Thank you for verifying your email address.</p>
+        {% if customer_id %}
+        <div class="mt-6">
+            <!-- Show QR code and random number here if needed -->
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 </div>
