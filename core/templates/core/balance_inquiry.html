@@ -4,13 +4,13 @@
 {% block title %}Balance Inquiry - My Project{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-white">
-    <div class="container mx-auto px-4 py-8">
+<div class="min-h-screen bg-white w-full overflow-x-hidden">
+    <div class="container mx-auto px-2 sm:px-4 py-8 max-w-full w-full">
         <h1 class="text-3xl font-bold text-blue-600 mb-8">Balance Inquiry</h1>
         
-        <div class="grid grid-cols-1 gap-6">
+        <div class="grid grid-cols-1 gap-6 w-full">
             <!-- NFC Reader Container -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md w-full">
                 <div id="balance-inquiry-container">
                     <!-- Step 1: Scan Card -->
                     <div id="step-1" class="step-container">
@@ -44,9 +44,6 @@
                                 <p class="text-3xl font-bold text-blue-600 mt-4"><span id="balance-amount">-</span></p>
                             </div>
                             <div class="flex justify-center">
-                                <button id="check-another-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 mr-4">
-                                    Check Another Card
-                                </button>
                                 <a href="{% url 'dashboard' %}" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
                                     Back to Dashboard
                                 </a>
@@ -57,9 +54,9 @@
             </div>
             
             <!-- Activity Log -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md w-full">
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Activity Log</h2>
-                <div id="activity-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm">
+                <div id="activity-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm max-w-full">
                     <p class="text-gray-500">NFC reader initialized.</p>
                 </div>
             </div>

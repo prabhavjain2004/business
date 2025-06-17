@@ -2,6 +2,10 @@
 <!DOCTYPE html>
 <html lang="en" class="light-mode">
 <head>
+    {% block meta %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    {% endblock %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TapNex{% endblock %}</title>
@@ -82,13 +86,13 @@
         <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
     {% endblock %}
 </head>
-<body class="bg-gray-50 font-sans antialiased h-screen flex flex-col relative">
+<body class="bg-gray-50 font-sans antialiased h-screen flex flex-col relative overflow-x-hidden">
     <!-- Simplified body without animations -->
     
     <header class="bg-primary-700 text-white shadow-lg mobile-sticky-header relative z-10">
         <div class="absolute inset-0 bg-black opacity-10 z-0"></div>
-        <div class="container mx-auto px-4 py-4 relative z-10">
-            <div class="flex flex-col sm:flex-row items-center justify-between">
+        <div class="container mx-auto px-4 py-4 relative z-10 max-w-full w-full">
+            <div class="flex flex-col sm:flex-row items-center justify-between w-full">
                 <h1 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0 flex items-center">
                     <div class="mr-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
