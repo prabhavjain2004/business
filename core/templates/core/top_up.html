@@ -997,4 +997,152 @@
                 .catch(() => showCustomerError('Error fetching customer details by Serial No.'));
         }
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- State ---
+    let scannedCard = null;
+    let secureKey = null;
+    let currentBalance = 0;
+    let customerName = '';
+
+    // --- Step containers ---
+    const step1 = document.getElementById('step-1');
+    const step2b = document.getElementById('step-2b');
+    const step3b = document.getElementById('step-3b');
+    const step4b = document.getElementById('step-4b');
+    // --- Card info elements ---
+    const cardIdSpan = document.getElementById('card-id');
+    const customerNameSpan = document.getElementById('customer-name');
+    const currentBalanceSpan = document.getElementById('current-balance');
+    // --- Top-up form elements ---
+    const topUpForm = document.getElementById('top-up-form');
+    const amountInput = document.getElementById('amount-input');
+    const totalAmountSpan = document.getElementById('total-amount');
+    const resetAmountBtn = document.getElementById('reset-amount-btn');
+    const paymentMethodInput = document.getElementById('payment-method-input');
+    const paymentCashBtn = document.getElementById('payment-cash');
+    const paymentUpiBtn = document.getElementById('payment-upi');
+    const nextBtn = document.getElementById('next-btn');
+    // --- Confirm step elements ---
+    const confirmCardId = document.getElementById('confirm-card-id');
+    const confirmAmount = document.getElementById('confirm-amount');
+    const newBalance = document.getElementById('new-balance');
+    const scanStatus3 = document.getElementById('scan-status-3');
+    const doneBtn = document.getElementById('done-btn');
+    // --- Activity log ---
+    const activityLog = document.getElementById('activity-log');
+
+    // --- Helper functions ---
+    function addLogMessage(msg, type = 'info') {
+        const p = document.createElement('p');
+        p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        p.className = type === 'error' ? 'text-red-500' : 'text-gray-700';
+        activityLog.appendChild(p);
+        activityLog.scrollTop = activityLog.scrollHeight;
+    }
+    function showStep(step) {
+        [step1, step2b, step3b, step4b].forEach(s => s && s.classList.add('hidden'));
+        if (step === 1) step1.classList.remove('hidden');
+        if (step === 2) step2b.classList.remove('hidden');
+        if (step === 3) step3b.classList.remove('hidden');
+        if (step === 4) step4b.classList.remove('hidden');
+    }
+    function resetAmount() {
+        amountInput.value = 0;
+        totalAmountSpan.textContent = '₹0';
+    }
+    function addToTotal(val) {
+        let current = parseInt(amountInput.value || '0');
+        current += val;
+        amountInput.value = current;
+        totalAmountSpan.textContent = `₹${current}`;
+    }
+    // --- Denomination buttons ---
+    document.querySelectorAll('.denomination-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const value = parseInt(this.getAttribute('data-value'));
+            addToTotal(value);
+        });
+    });
+    resetAmountBtn.addEventListener('click', resetAmount);
+    // --- Payment method buttons ---
+    paymentCashBtn.addEventListener('click', function() {
+        paymentMethodInput.value = 'cash';
+        paymentCashBtn.classList.add('bg-blue-200');
+        paymentUpiBtn.classList.remove('bg-blue-200');
+    });
+    paymentUpiBtn.addEventListener('click', function() {
+        paymentMethodInput.value = 'upi';
+        paymentUpiBtn.classList.add('bg-blue-200');
+        paymentCashBtn.classList.remove('bg-blue-200');
+    });
+    // --- NFC Integration ---
+    // Simulate NFC scan for demo (replace with real NFC integration)
+    window.simulateNFCScan = function(cardId, name, balance, key) {
+        scannedCard = cardId;
+        secureKey = key;
+        currentBalance = balance;
+        customerName = name;
+        cardIdSpan.textContent = cardId;
+        customerNameSpan.textContent = name;
+        currentBalanceSpan.textContent = `₹${balance}`;
+        showStep(2);
+        addLogMessage(`Card detected: ${cardId}`);
+    };
+    // --- Next button: Confirm top-up ---
+    nextBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const amount = parseInt(amountInput.value);
+        if (!amount || amount <= 0) {
+            addLogMessage('Please enter a valid top-up amount.', 'error');
+            return;
+        }
+        // Show confirm step
+        confirmCardId.textContent = scannedCard;
+        confirmAmount.textContent = `₹${amount}`;
+        newBalance.textContent = `₹${currentBalance + amount}`;
+        showStep(3);
+        scanStatus3.textContent = 'Tap the card again to confirm top-up...';
+        // Wait for card tap (simulate with timeout for demo)
+        setTimeout(() => {
+            // Call backend API
+            fetch('/api/nfc/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || ''
+                },
+                body: JSON.stringify({
+                    action: 'top_up',
+                    secure_key: secureKey,
+                    amount: amount,
+                    payment_method: paymentMethodInput.value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLogMessage('Top-up successful!');
+                    showStep(4);
+                } else {
+                    addLogMessage('Top-up failed: ' + (data.message || 'Unknown error'), 'error');
+                    scanStatus3.textContent = data.message || 'Top-up failed.';
+                }
+            })
+            .catch(err => {
+                addLogMessage('Top-up failed: ' + err.message, 'error');
+                scanStatus3.textContent = err.message;
+            });
+        }, 1500);
+    });
+    // --- Done button: Reset to step 1 ---
+    doneBtn.addEventListener('click', function() {
+        showStep(1);
+        resetAmount();
+        addLogMessage('Ready for next card.');
+    });
+    // --- On page load, show step 1 ---
+    showStep(1);
+});
+</script>
 {% endblock %}
