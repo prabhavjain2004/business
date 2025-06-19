@@ -13,10 +13,10 @@
             <!-- NFC Reader Container -->
             <div class="bg-white p-6 rounded-lg shadow-md">
                 <div id="top-up-container">
-                    <!-- Step 1: Scan Card -->
-                    <div id="step-1" class="step-container">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 1: Scan Card</h2>
-                        <p class="text-lg text-center mb-4">Please tap an NFC card to begin</p>
+                    <!-- Card Scan and Customer Details -->
+                    <div id="card-section">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Scan Card or Enter Customer Details</h2>
+                        <p class="text-lg text-center mb-4">Please tap an NFC card or enter customer details</p>
                         <div class="flex justify-center mb-4">
                             <div class="animate-pulse bg-blue-100 rounded-full p-8">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,16 +25,6 @@
                             </div>
                         </div>
                         <p id="scan-status-1" class="text-center text-gray-600">Waiting for card...</p>
-                    </div>
-                    
-                    <!-- Step 2A: Enter Customer Details (for new cards) -->
-                    <div id="step-2a" class="step-container hidden">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 2: Scan or Enter Customer Details</h2>
-                        <p class="text-lg text-center mb-4">New card detected! Scan QR code or enter customer details</p>
-                        <div id="new-card-info" class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Card ID:</strong> <span id="new-card-id"></span></p>
-                            <p class="text-sm text-blue-600">This is a new card that needs to be issued first.</p>
-                        </div>
                         <!-- QR Scan and Manual Entry -->
                         <div class="mb-4 flex flex-col gap-2">
                             <button type="button" id="scan-qr-btn" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">Scan QR</button>
@@ -50,174 +40,42 @@
                             <p><strong>Email:</strong> <span id="customer-email"></span></p>
                         </div>
                         <div id="customer-error" class="text-red-600 text-center hidden"></div>
-                        <!-- Only show the rest of the form after customer is identified -->
-                        <form id="customer-form" class="hidden">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Loading Amount</label>
-                                <div class="grid grid-cols-2 gap-2 mb-2">
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg mb-2">
-                                    <span class="font-semibold">Total Amount:</span>
-                                    <span id="total-amount-new" class="text-lg font-bold">₹0</span>
-                                    <input type="hidden" id="amount-input-new" name="amount" value="0">
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="button" id="reset-amount-btn-new" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm">Reset Amount</button>
-                                </div>
+                    </div>
+                    
+                    <!-- Top-Up Form (always shown after customer details are fetched) -->
+                    <form id="top-up-form" class="hidden mt-6">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Top-Up Amount</label>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
+                                <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
+                                <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
+                                <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
                             </div>
-                            
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Payment Method</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button type="button" id="payment-cash-new" class="payment-method-btn-new bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg active" data-value="cash">Cash</button>
-                                    <button type="button" id="payment-upi-new" class="payment-method-btn-new bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="upi">UPI</button>
-                                </div>
-                                <input type="hidden" id="payment-method-input-new" name="payment_method" value="cash">
+                            <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg mb-2">
+                                <span class="font-semibold">Total Amount:</span>
+                                <span id="total-amount" class="text-lg font-bold">₹0</span>
+                                <input type="hidden" id="amount-input" name="amount" value="0">
                             </div>
-                        </form>
+                            <div class="flex justify-end">
+                                <button type="button" id="reset-amount-btn" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm">Reset Amount</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Payment Method</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" id="payment-cash" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg active" data-value="cash">Cash</button>
+                                <button type="button" id="payment-upi" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="upi">UPI</button>
+                            </div>
+                            <input type="hidden" id="payment-method-input" name="payment_method" value="cash">
+                        </div>
                         <div class="flex justify-end mt-4">
-                            <button id="next-btn-new" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 hidden">
-                                Next
+                            <button id="submit-topup-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                Top-Up Now
                             </button>
                         </div>
-                    </div>
-                    
-                    <!-- Step 2B: Enter Top-Up Amount (for existing cards) -->
-                    <div id="step-2b" class="step-container hidden">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 2: Enter Top-Up Amount</h2>
-                        <p class="text-lg text-center mb-4">Card detected! Enter top-up amount</p>
-                        
-                        <div id="card-info" class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Card ID:</strong> <span id="card-id"></span></p>
-                            <p><strong>Customer:</strong> <span id="customer-name">-</span></p>
-                            <p><strong>Current Balance:</strong> <span id="current-balance">-</span></p>
-                        </div>
-                        
-                        <!-- Customer details form (shown only for new cards) -->
-                        <form id="customer-form" class="hidden">
-                            <div class="mb-4">
-                                <label for="customer-name-input" class="block text-gray-700 mb-2">Customer Name</label>
-                                <input type="text" id="customer-name-input" name="customer-name" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter customer name" required>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label for="mobile-number" class="block text-gray-700 mb-2">Mobile Number</label>
-                                <input type="tel" id="mobile-number" name="mobile-number" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter mobile number" required>
-                            </div>
-                        </form>
-                        
-                        <form id="top-up-form">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Top-Up Amount</label>
-                                <div class="grid grid-cols-2 gap-2 mb-2">
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="50">₹50</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="100">₹100</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="500">₹500</button>
-                                    <button type="button" class="denomination-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="1000">₹1000</button>
-                                </div>
-                                <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg mb-2">
-                                    <span class="font-semibold">Total Amount:</span>
-                                    <span id="total-amount" class="text-lg font-bold">₹0</span>
-                                    <input type="hidden" id="amount-input" name="amount" value="0">
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="button" id="reset-amount-btn" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm">Reset Amount</button>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Payment Method</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button type="button" id="payment-cash" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg active" data-value="cash">Cash</button>
-                                    <button type="button" id="payment-upi" class="payment-method-btn bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg" data-value="upi">UPI</button>
-                                </div>
-                                <input type="hidden" id="payment-method-input" name="payment_method" value="cash">
-                            </div>
-                        </form>
-                        <div class="flex justify-end mt-4">
-                            <button id="next-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Step 3A: Confirm New Card -->
-                    <div id="step-3a" class="step-container hidden">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 3: Confirm Card</h2>
-                        <p class="text-lg text-center mb-4">Please tap the card again to confirm and complete issuance</p>
-                        <div class="flex justify-center mb-4">
-                            <div class="animate-pulse bg-green-100 rounded-full p-8">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Customer:</strong> <span id="confirm-customer-name"></span></p>
-                            <p><strong>Mobile:</strong> <span id="confirm-mobile-number"></span></p>
-                            <p><strong>Amount:</strong> <span id="confirm-amount-new"></span></p>
-                        </div>
-                        <p id="scan-status-3a" class="text-center text-gray-600">Waiting for confirmation...</p>
-                    </div>
-                    
-                    <!-- Step 3B: Confirm Top-Up -->
-                    <div id="step-3b" class="step-container hidden">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 3: Confirm Card</h2>
-                        <p class="text-lg text-center mb-4">Please tap the card again to confirm and complete top-up</p>
-                        <div class="flex justify-center mb-4">
-                            <div class="animate-pulse bg-green-100 rounded-full p-8">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="bg-gray-100 p-4 rounded-lg mb-4">
-                            <p><strong>Card ID:</strong> <span id="confirm-card-id"></span></p>
-                            <p><strong>Top-Up Amount:</strong> <span id="confirm-amount"></span></p>
-                            <p><strong>New Balance:</strong> <span id="new-balance"></span></p>
-                        </div>
-                        <p id="scan-status-3" class="text-center text-gray-600">Waiting for confirmation...</p>
-                    </div>
-                    
-                    <!-- Step 4A: Success for New Card -->
-                    <div id="step-4a" class="step-container hidden">
-                        <div class="text-center">
-                            <div class="flex justify-center mb-4">
-                                <div class="bg-green-100 rounded-full p-8">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <h3 class="text-xl font-semibold text-green-600 mb-2">Card Issued Successfully!</h3>
-                            <p class="text-gray-600 mb-4">The card has been issued and is ready to use.</p>
-                            <button id="done-btn-new" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                Done
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Step 4B: Success for Top-Up -->
-                    <div id="step-4b" class="step-container hidden">
-                        <div class="text-center">
-                            <div class="flex justify-center mb-4">
-                                <div class="bg-green-100 rounded-full p-8">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <h3 class="text-xl font-semibold text-green-600 mb-2">Top-Up Successful!</h3>
-                            <p class="text-gray-600 mb-4">The card has been topped up successfully.</p>
-                            <button id="done-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                Done
-                            </button>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
             
@@ -355,18 +213,10 @@
             let isNewCard = false;
             
             // Get step containers
-            const step1 = document.getElementById('step-1');
-            const step2a = document.getElementById('step-2a');
-            const step2b = document.getElementById('step-2b');
-            const step3a = document.getElementById('step-3a');
-            const step3b = document.getElementById('step-3b');
-            const step4a = document.getElementById('step-4a');
-            const step4b = document.getElementById('step-4b');
+            const cardSection = document.getElementById('card-section');
             
             // Get status elements
             const scanStatus1 = document.getElementById('scan-status-1');
-            const scanStatus3a = document.getElementById('scan-status-3a');
-            const scanStatus3 = document.getElementById('scan-status-3');
             
             // Get card info elements for existing cards
             const cardId = document.getElementById('card-id');
@@ -626,7 +476,7 @@
                             addLogMessage(`Existing card detected. Customer: ${response.customer_name || 'Unknown'}, Balance: ₹${response.balance || 0}`);
                             
                             // Move to top-up step
-                            showStep(2, 'b');
+                            showTopUpForm();
                         } else {
                             // Card is new - show issue card flow
                             isNewCard = true;
@@ -637,7 +487,7 @@
                             addLogMessage('New card detected. Please enter customer details.');
                             
                             // Move to issue card step
-                            showStep(2, 'a');
+                            showCustomerForm();
                         }
                     }).catch(error => {
                         // If error, assume it's a new card
@@ -649,7 +499,7 @@
                         addLogMessage('New card detected. Please enter customer details.');
                         
                         // Move to issue card step
-                        showStep(2, 'a');
+                        showCustomerForm();
                     });
                 } else if (currentStep === 3) {
                     if (cardIdValue === scannedCardId) {
@@ -821,41 +671,18 @@
                 addLogMessage('Process reset. Waiting for card...');
             }
             
-            // Function to show step with type (a or b)
-            function showStep(step, type = '') {
-                currentStep = step;
-                
-                // Hide all steps
-                step1.classList.add('hidden');
-                step2a.classList.add('hidden');
-                step2b.classList.add('hidden');
-                step3a.classList.add('hidden');
-                step3b.classList.add('hidden');
-                step4a.classList.add('hidden');
-                step4b.classList.add('hidden');
-                
-                // Show requested step
-                if (step === 1) {
-                    step1.classList.remove('hidden');
-                } else if (step === 2) {
-                    if (type === 'a') {
-                        step2a.classList.remove('hidden');
-                    } else if (type === 'b') {
-                        step2b.classList.remove('hidden');
-                    }
-                } else if (step === 3) {
-                    if (type === 'a') {
-                        step3a.classList.remove('hidden');
-                    } else if (type === 'b') {
-                        step3b.classList.remove('hidden');
-                    }
-                } else if (step === 4) {
-                    if (type === 'a') {
-                        step4a.classList.remove('hidden');
-                    } else if (type === 'b') {
-                        step4b.classList.remove('hidden');
-                    }
-                }
+            // Function to show top-up form directly
+            function showTopUpForm() {
+                cardSection.classList.remove('hidden');
+                topUpForm.classList.remove('hidden');
+                addLogMessage('Top-up form is now available');
+            }
+            
+            // Function to show customer form for new cards
+            function showCustomerForm() {
+                cardSection.classList.remove('hidden');
+                customerForm.classList.remove('hidden');
+                addLogMessage('Customer form is now available');
             }
             
             // Function to add to the total amount for existing cards
@@ -1008,6 +835,17 @@
                     document.getElementById('customer-form').classList.add('hidden');
                     document.getElementById('next-btn-new').classList.add('hidden');
                 });
+        }
+        
+        // After fetching customer details successfully:
+        function showCustomerInfo(customer) {
+            document.getElementById('customer-info').classList.remove('hidden');
+            document.getElementById('customer-error').classList.add('hidden');
+            document.getElementById('customer-name').textContent = customer.name || '-';
+            document.getElementById('customer-mobile').textContent = customer.mobile || '-';
+            document.getElementById('customer-email').textContent = customer.email || '-';
+            // Show the top-up form
+            document.getElementById('top-up-form').classList.remove('hidden');
         }
     </script>
 {% endblock %}
