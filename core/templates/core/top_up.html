@@ -329,6 +329,27 @@
                 activityLog.appendChild(logEntry);
                 activityLog.scrollTop = activityLog.scrollHeight;
             }
+
+            // Denomination button logic
+            const denominationBtns = document.querySelectorAll('.denomination-btn');
+            const totalAmountSpan = document.getElementById('total-amount');
+            // Use the already declared amountInput variable
+            const resetAmountBtn = document.getElementById('reset-amount-btn');
+            let total = 0;
+
+            denominationBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const value = parseInt(this.getAttribute('data-value'));
+                    total += value;
+                    totalAmountSpan.textContent = `₹${total}`;
+                    amountInput.value = total;
+                });
+            });
+            resetAmountBtn.addEventListener('click', function() {
+                total = 0;
+                totalAmountSpan.textContent = '₹0';
+                amountInput.value = 0;
+            });
         });
     </script>
 {% endblock %}
