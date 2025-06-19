@@ -179,673 +179,156 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize NFC Card Manager
             const cardManager = new NFCCardManager('/api/nfc/');
-            
-            // Get fallback and error modal elements
             const nfcFallbackMessage = document.getElementById('nfc-fallback-message');
             const nfcErrorModal = document.getElementById('nfc-error-modal');
             const nfcErrorTitle = document.getElementById('nfc-error-title');
             const nfcErrorMessage = document.getElementById('nfc-error-message');
             const nfcFallbackCloseBtn = document.getElementById('nfc-fallback-close-btn');
             const nfcErrorCloseBtn = document.getElementById('nfc-error-close-btn');
-            
-            // Add event listeners for fallback and error modals
             nfcFallbackCloseBtn.addEventListener('click', function() {
                 nfcFallbackMessage.classList.add('hidden');
             });
-            
             nfcErrorCloseBtn.addEventListener('click', function() {
                 nfcErrorModal.classList.add('hidden');
             });
-            
-            // Initialize NFC Reader
+
+            // NFC Reader
             const nfcReader = new NFCReader({
                 onReading: handleNFCReading,
                 onError: handleNFCError,
                 onNotSupported: handleNFCNotSupported
             });
-            
-            // Current operation state
-            let currentStep = 1;
-            let scannedCardId = null;
-            let currentBalance = 0;
-            let isNewCard = false;
-            
-            // Get step containers
-            const cardSection = document.getElementById('card-section');
-            
-            // Get status elements
+
+            // UI Elements
             const scanStatus1 = document.getElementById('scan-status-1');
-            
-            // Get card info elements for existing cards
             const cardId = document.getElementById('card-id');
             const customerName = document.getElementById('customer-name');
             const currentBalanceElement = document.getElementById('current-balance');
-            
-            // Get card info elements for new cards
             const newCardId = document.getElementById('new-card-id');
-            
-            // Get form elements for existing cards
             const topUpForm = document.getElementById('top-up-form');
-            const totalAmount = document.getElementById('total-amount');
-            const amountInput = document.getElementById('amount-input');
-            
-            // Get form elements for new cards
             const customerForm = document.getElementById('customer-form');
             const customerNameInput = document.getElementById('customer-name-input');
             const mobileNumber = document.getElementById('mobile-number');
-            const totalAmountNew = document.getElementById('total-amount-new');
-            const amountInputNew = document.getElementById('amount-input-new');
-            
-            // Get confirmation elements for existing cards
-            const confirmCardId = document.getElementById('confirm-card-id');
-            const confirmAmount = document.getElementById('confirm-amount');
-            const newBalance = document.getElementById('new-balance');
-            
-            // Get confirmation elements for new cards
-            const confirmCustomerName = document.getElementById('confirm-customer-name');
-            const confirmMobileNumber = document.getElementById('confirm-mobile-number');
-            const confirmAmountNew = document.getElementById('confirm-amount-new');
-            
-            // Get buttons for existing cards
-            const nextBtn = document.getElementById('next-btn');
-            const doneBtn = document.getElementById('done-btn');
-            
-            // Get buttons for new cards
-            const nextBtnNew = document.getElementById('next-btn-new');
-            const doneBtnNew = document.getElementById('done-btn-new');
-            
-            // Get activity log
+            const totalAmount = document.getElementById('total-amount');
+            const amountInput = document.getElementById('amount-input');
             const activityLog = document.getElementById('activity-log');
-            
-            // Add event listeners for buttons
-            nextBtn.addEventListener('click', goToStep3);
-            doneBtn.addEventListener('click', resetProcess);
-            nextBtnNew.addEventListener('click', goToStep3New);
-            doneBtnNew.addEventListener('click', resetProcess);
-            
-            // Add event listeners for denomination buttons (existing cards)
-            const denominationBtns = document.querySelectorAll('.denomination-btn');
-            const resetAmountBtn = document.getElementById('reset-amount-btn');
-            
-            // Get denomination buttons for new cards
-            const denominationBtnsNew = document.querySelectorAll('#step-2a .denomination-btn');
-            const resetAmountBtnNew = document.getElementById('reset-amount-btn-new');
-            
-            denominationBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Add the value to the total (don't toggle, just add)
-                    const value = parseInt(this.getAttribute('data-value'));
-                    
-                    // Highlight the button temporarily to show it was clicked
-                    this.classList.remove('bg-gray-200');
-                    this.classList.add('bg-blue-200');
-                    
-                    // After a short delay, revert the button to its original state
-                    setTimeout(() => {
-                        this.classList.remove('bg-blue-200');
-                        this.classList.add('bg-gray-200');
-                    }, 200);
-                    
-                    // Update total by adding the clicked value
-                    addToTotal(value);
-                });
-            });
-            
-            // Add event listener for reset button
-            resetAmountBtn.addEventListener('click', function() {
-                resetAmount();
-                addLogMessage('Amount reset to ₹0');
-            });
-            
-            // Get UPI QR modal elements
-            const upiQrModal = document.getElementById('upi-qr-modal');
-            const upiQrCode = document.getElementById('upi-qr-code');
-            const upiQrDoneBtn = document.getElementById('upi-qr-done-btn');
-            
-            // Add event listener for UPI QR done button
-            upiQrDoneBtn.addEventListener('click', function() {
-                upiQrModal.classList.add('hidden');
-            });
-            
-            // Add event listeners for payment method buttons (existing cards)
-            const paymentMethodBtns = document.querySelectorAll('.payment-method-btn');
-            const paymentMethodInput = document.getElementById('payment-method-input');
-            
-            // Get payment method buttons for new cards
-            const paymentMethodBtnsNew = document.querySelectorAll('.payment-method-btn-new');
-            const paymentMethodInputNew = document.getElementById('payment-method-input-new');
-            
-            paymentMethodBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    paymentMethodBtns.forEach(b => {
-                        b.classList.remove('bg-blue-200');
-                        b.classList.add('bg-gray-200');
-                    });
-                    
-                    // Add active class to clicked button
-                    this.classList.remove('bg-gray-200');
-                    this.classList.add('bg-blue-200');
-                    
-                    // Update payment method input
-                    const paymentMethod = this.getAttribute('data-value');
-                    paymentMethodInput.value = paymentMethod;
-                    
-                    // Show QR code modal if UPI is selected
-                    if (paymentMethod === 'upi') {
-                        // Get the current amount
-                        const amount = amountInput.value || 0;
-                        if (amount > 0) {
-                            // Update QR code image source with the current amount
-                            upiQrCode.src = `{% url 'generate_upi_qr' %}?amount=${amount}`;
-                            upiQrModal.classList.remove('hidden');
-                        } else {
-                            alert('Please select an amount first');
-                            // Reset to cash payment if no amount is selected
-                            document.getElementById('payment-cash').click();
-                            return;
-                        }
-                    }
-                    
-                    addLogMessage(`Payment method set to: ${paymentMethod}`);
-                });
-            });
-            
-            // Update QR code when amount changes
-            denominationBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // If UPI is selected, update the QR code with the new amount
-                    if (paymentMethodInput.value === 'upi') {
-                        const amount = parseInt(amountInput.value) || 0;
-                        if (amount > 0) {
-                            upiQrCode.src = `{% url 'generate_upi_qr' %}?amount=${amount}`;
-                        }
-                    }
-                });
-            });
-            
-            // Start NFC reader
-            nfcReader.startReading();
-            addLogMessage('NFC reader started. Waiting for card...');
-            
-            // Add event listeners for denomination buttons (new cards)
-            denominationBtnsNew.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Add the value to the total (don't toggle, just add)
-                    const value = parseInt(this.getAttribute('data-value'));
-                    
-                    // Highlight the button temporarily to show it was clicked
-                    this.classList.remove('bg-gray-200');
-                    this.classList.add('bg-blue-200');
-                    
-                    // After a short delay, revert the button to its original state
-                    setTimeout(() => {
-                        this.classList.remove('bg-blue-200');
-                        this.classList.add('bg-gray-200');
-                    }, 200);
-                    
-                    // Update total by adding the clicked value
-                    addToTotalNew(value);
-                });
-            });
-            
-            // Add event listener for reset button (new cards)
-            resetAmountBtnNew.addEventListener('click', function() {
-                resetAmountNew();
-                addLogMessage('Amount reset to ₹0');
-            });
-            
-            // Add event listeners for payment method buttons (new cards)
-            paymentMethodBtnsNew.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    paymentMethodBtnsNew.forEach(b => {
-                        b.classList.remove('bg-blue-200');
-                        b.classList.add('bg-gray-200');
-                    });
-                    
-                    // Add active class to clicked button
-                    this.classList.remove('bg-gray-200');
-                    this.classList.add('bg-blue-200');
-                    
-                    // Update payment method input
-                    const paymentMethod = this.getAttribute('data-value');
-                    paymentMethodInputNew.value = paymentMethod;
-                    
-                    // Show QR code modal if UPI is selected
-                    if (paymentMethod === 'upi') {
-                        // Get the current amount
-                        const amount = amountInputNew.value || 0;
-                        if (amount > 0) {
-                            // Update QR code image source with the current amount
-                            upiQrCode.src = `{% url 'generate_upi_qr' %}?amount=${amount}`;
-                            upiQrModal.classList.remove('hidden');
-                        } else {
-                            alert('Please select an amount first');
-                            // Reset to cash payment if no amount is selected
-                            document.getElementById('payment-cash-new').click();
-                            return;
-                        }
-                    }
-                    
-                    addLogMessage(`Payment method set to: ${paymentMethod}`);
-                });
-            });
-            
-            // Update QR code when amount changes (new cards)
-            denominationBtnsNew.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // If UPI is selected, update the QR code with the new amount
-                    if (paymentMethodInputNew.value === 'upi') {
-                        const amount = parseInt(amountInputNew.value) || 0;
-                        if (amount > 0) {
-                            upiQrCode.src = `{% url 'generate_upi_qr' %}?amount=${amount}`;
-                        }
-                    }
-                });
-            });
-            
-            // Function to handle NFC reading
+
+            // Always show top-up form after scan/fetch
+            function showTopUpForm() {
+                if (topUpForm) topUpForm.classList.remove('hidden');
+                if (customerForm) customerForm.classList.add('hidden');
+            }
+            function showCustomerForm() {
+                if (customerForm) customerForm.classList.remove('hidden');
+                if (topUpForm) topUpForm.classList.add('hidden');
+            }
+
+            // NFC Reading Handler
             function handleNFCReading(cardData) {
                 const cardIdValue = cardData.serialNumber;
-                
-                if (currentStep === 1) {
-                    // First scan for card
-                    scannedCardId = cardIdValue;
-                    scanStatus1.textContent = `Card detected: ${cardIdValue}`;
-                    addLogMessage(`Card detected: ${cardIdValue}`);
-                    
-                    // Get card info from server
-                    cardManager.sendCardData(
-                        { serialNumber: cardIdValue },
-                        'balance_inquiry'
-                    ).then(response => {
-                        // Check if card is already issued (has customer name or balance)
-                        if (response.customer_name || response.balance > 0) {
-                            // Card is already issued - show top-up flow
-                            isNewCard = false;
-                            
-                            // Update card info
-                            cardId.textContent = cardIdValue;
-                            customerName.textContent = response.customer_name || '-';
-                            currentBalanceElement.textContent = `₹${response.balance || 0}`;
-                            currentBalance = response.balance || 0;
-                            
-                            addLogMessage(`Existing card detected. Customer: ${response.customer_name || 'Unknown'}, Balance: ₹${response.balance || 0}`);
-                            
-                            // Move to top-up step
-                            showTopUpForm();
-                        } else {
-                            // Card is new - show issue card flow
-                            isNewCard = true;
-                            
-                            // Update new card info
-                            newCardId.textContent = cardIdValue;
-                            
-                            addLogMessage('New card detected. Please enter customer details.');
-                            
-                            // Move to issue card step
-                            showCustomerForm();
-                        }
-                    }).catch(error => {
-                        // If error, assume it's a new card
-                        isNewCard = true;
-                        
-                        // Update new card info
-                        newCardId.textContent = cardIdValue;
-                        
-                        addLogMessage('New card detected. Please enter customer details.');
-                        
-                        // Move to issue card step
-                        showCustomerForm();
-                    });
-                } else if (currentStep === 3) {
-                    if (cardIdValue === scannedCardId) {
-                        if (isNewCard) {
-                            // Confirmation scan for new card
-                            scanStatus3a.textContent = 'Card confirmed! Processing...';
-                            addLogMessage('Card confirmed! Processing...');
-                            
-                            // Get form data for new card
-                            const name = customerNameInput.value;
-                            const mobile = mobileNumber.value;
-                            const amount = amountInputNew.value;
-                            const paymentMethod = paymentMethodInputNew.value;
-                            
-                            // Play success sound immediately
-                            playSound('success');
-                            
-                            // Move to success step immediately to avoid delay
-                            addLogMessage('Card issued successfully!');
-                            showStep(4, 'a');
-                            
-                            // Send data to server in the background
-                            cardManager.sendCardData(
-                                { serialNumber: cardIdValue },
-                                'issue_card',
-                                {
-                                    customer_name: name,
-                                    mobile_number: mobile,
-                                    initial_balance: amount,
-                                    payment_method: paymentMethod
-                                }
-                            ).then(response => {
-                                // Update success message with server response if needed
-                                addLogMessage(`Card issuance confirmed by server. Card ID: ${cardIdValue}`);
-                            }).catch(error => {
-                                addLogMessage(`Error: ${error.message}`, 'error');
-                            });
-                        } else {
-                            // Confirmation scan for top-up
-                            scanStatus3.textContent = 'Card confirmed! Processing...';
-                            addLogMessage('Card confirmed! Processing...');
-                            
-                            // Get amount and payment method for top-up
-                            const amount = amountInput.value;
-                            const paymentMethod = paymentMethodInput.value;
-                            
-                            // Play success sound immediately
-                            playSound('success');
-                            
-                            // Move to success step immediately to avoid delay
-                            addLogMessage(`Top-up successful! Amount: ₹${amount}`);
-                            showStep(4, 'b');
-                            
-                            // Send data to server in the background
-                            cardManager.sendCardData(
-                                { serialNumber: cardIdValue },
-                                'top_up',
-                                {
-                                    amount: amount,
-                                    payment_method: paymentMethod
-                                }
-                            ).then(response => {
-                                // Update success message with server response if needed
-                                addLogMessage(`Top-up confirmed by server. New balance: ₹${response.new_balance || 'updated'}`);
-                            }).catch(error => {
-                                addLogMessage(`Error: ${error.message}`, 'error');
-                            });
-                        }
+                scanStatus1.textContent = `Card detected: ${cardIdValue}`;
+                addLogMessage(`Card detected: ${cardIdValue}`);
+                cardManager.sendCardData(
+                    { serialNumber: cardIdValue },
+                    'balance_inquiry'
+                ).then(response => {
+                    if (response.customer_name || response.balance > 0) {
+                        // Existing card
+                        cardId && (cardId.textContent = cardIdValue);
+                        customerName && (customerName.textContent = response.customer_name || '-');
+                        currentBalanceElement && (currentBalanceElement.textContent = `₹${response.balance || 0}`);
+                        addLogMessage(`Existing card. Customer: ${response.customer_name || 'Unknown'}, Balance: ₹${response.balance || 0}`);
+                        showTopUpForm();
                     } else {
-                        // Different card detected
-                        const errorMsg = 'Error: Different card detected. Please use the same card.';
-                        if (isNewCard) {
-                            scanStatus3a.textContent = errorMsg;
-                        } else {
-                            scanStatus3.textContent = errorMsg;
-                        }
-                        addLogMessage(errorMsg, 'error');
+                        // New card
+                        newCardId && (newCardId.textContent = cardIdValue);
+                        addLogMessage('New card detected. Please enter customer details.');
+                        showCustomerForm();
                     }
-                }
+                }).catch(error => {
+                    addLogMessage('New card detected. Please enter customer details.');
+                    showCustomerForm();
+                });
             }
-            
-            // Function to handle NFC not supported
             function handleNFCNotSupported() {
-                console.warn('NFC is not supported on this device/browser');
-                addLogMessage('NFC is not supported on this device/browser', 'error');
-                
-                // Show the fallback message
                 nfcFallbackMessage.classList.remove('hidden');
             }
-            
-            // Function to handle NFC errors
             function handleNFCError(error) {
-                console.error('NFC Error:', error);
-                addLogMessage(`NFC Error: ${error.message || error}`, 'error');
-                
-                // Show the error modal
                 nfcErrorTitle.textContent = 'NFC Error';
                 nfcErrorMessage.textContent = error.message || error;
                 nfcErrorModal.classList.remove('hidden');
             }
-            
-            // Function to go to step 3 for new card
-            function goToStep3New() {
-                // Validate form
-                if (!customerNameInput.value) {
-                    alert('Please enter customer name');
-                    return;
+
+            // Start NFC reader
+            nfcReader.startReading();
+            addLogMessage('NFC reader started. Waiting for card...');
+
+            // QR/Manual Fetch
+            const scanBtn = document.getElementById('scan-qr-btn');
+            const qrReaderDiv = document.getElementById('qr-reader');
+            const manualCustomerId = document.getElementById('manual-customer-id');
+            const fetchBtn = document.getElementById('fetch-customer-btn');
+            let html5QrCode;
+            scanBtn && scanBtn.addEventListener('click', function() {
+                qrReaderDiv.classList.remove('hidden');
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("qr-reader");
                 }
-                
-                if (!mobileNumber.value) {
-                    alert('Please enter mobile number');
-                    return;
-                }
-                
-                if (parseInt(amountInputNew.value) <= 0) {
-                    alert('Please select a loading amount');
-                    return;
-                }
-                
-                // Update confirmation info
-                confirmCustomerName.textContent = customerNameInput.value;
-                confirmMobileNumber.textContent = mobileNumber.value;
-                confirmAmountNew.textContent = totalAmountNew.textContent;
-                
-                // Go to step 3
-                showStep(3, 'a');
-                addLogMessage('Please tap the card again to confirm issuance');
-            }
-            
-            // Function to go to step 3 for existing card
-            function goToStep3() {
-                // Validate form
-                if (parseInt(amountInput.value) <= 0) {
-                    alert('Please select a top-up amount');
-                    return;
-                }
-                
-                // Update confirmation info
-                confirmCardId.textContent = scannedCardId;
-                confirmAmount.textContent = totalAmount.textContent;
-                const newBalanceValue = parseFloat(currentBalance) + parseFloat(amountInput.value);
-                newBalance.textContent = `₹${newBalanceValue}`;
-                
-                // Go to step 3
-                showStep(3, 'b');
-                addLogMessage('Please tap the card again to confirm top-up');
-            }
-            
-            // Function to reset the process
-            function resetProcess() {
-                // Reset forms
-                if (customerNameInput) customerNameInput.value = '';
-                if (mobileNumber) mobileNumber.value = '';
-                resetDenominationButtons();
-                resetDenominationButtonsNew();
-                totalAmount.textContent = '₹0';
-                amountInput.value = 0;
-                totalAmountNew.textContent = '₹0';
-                amountInputNew.value = 0;
-                
-                // Reset state
-                currentStep = 1;
-                scannedCardId = null;
-                currentBalance = 0;
-                isNewCard = false;
-                
-                // Show step 1
-                showStep(1);
-                addLogMessage('Process reset. Waiting for card...');
-            }
-            
-            // Function to show top-up form directly
-            function showTopUpForm() {
-                cardSection.classList.remove('hidden');
-                topUpForm.classList.remove('hidden');
-                addLogMessage('Top-up form is now available');
-            }
-            
-            // Function to show customer form for new cards
-            function showCustomerForm() {
-                cardSection.classList.remove('hidden');
-                customerForm.classList.remove('hidden');
-                addLogMessage('Customer form is now available');
-            }
-            
-            // Function to add to the total amount for existing cards
-            function addToTotal(value) {
-                let currentTotal = parseInt(amountInput.value) || 0;
-                let newTotal = currentTotal + value;
-                
-                totalAmount.textContent = `₹${newTotal}`;
-                amountInput.value = newTotal;
-                
-                addLogMessage(`Added ₹${value}. Total: ₹${newTotal}`);
-            }
-            
-            // Function to add to the total amount for new cards
-            function addToTotalNew(value) {
-                let currentTotal = parseInt(amountInputNew.value) || 0;
-                let newTotal = currentTotal + value;
-                
-                totalAmountNew.textContent = `₹${newTotal}`;
-                amountInputNew.value = newTotal;
-                
-                addLogMessage(`Added ₹${value}. Total: ₹${newTotal}`);
-            }
-            
-            // Function to reset the amount for existing cards
-            function resetAmount() {
-                totalAmount.textContent = '₹0';
-                amountInput.value = 0;
-            }
-            
-            // Function to reset the amount for new cards
-            function resetAmountNew() {
-                totalAmountNew.textContent = '₹0';
-                amountInputNew.value = 0;
-            }
-            
-            // Function to reset denomination buttons for existing cards
-            function resetDenominationButtons() {
-                const denominationBtns = document.querySelectorAll('.denomination-btn');
-                denominationBtns.forEach(btn => {
-                    btn.classList.remove('bg-blue-200');
-                    btn.classList.add('bg-gray-200');
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+                    (decodedText) => {
+                        html5QrCode.stop();
+                        qrReaderDiv.classList.add('hidden');
+                        manualCustomerId.value = decodedText;
+                        fetchCustomerDetails(decodedText);
+                    },
+                    () => {}
+                ).catch(err => {
+                    alert('Camera error: ' + err);
                 });
+            });
+            fetchBtn && fetchBtn.addEventListener('click', function() {
+                const id = manualCustomerId.value.trim();
+                if (id) fetchCustomerDetails(id);
+            });
+            function fetchCustomerDetails(customerId) {
+                fetch(`/api/get_customer_details/?customer_id=${encodeURIComponent(customerId)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showCustomerInfo(data.customer);
+                            addLogMessage('Customer fetched: ' + (data.customer.name || '-'));
+                        } else {
+                            showCustomerError(data.error || 'Customer not found by Serial No.');
+                        }
+                    })
+                    .catch(() => {
+                        showCustomerError('Error fetching customer details by Serial No.');
+                    });
             }
-            
-            // Function to reset denomination buttons for new cards
-            function resetDenominationButtonsNew() {
-                const denominationBtnsNew = document.querySelectorAll('.denomination-btn-new');
-                denominationBtnsNew.forEach(btn => {
-                    btn.classList.remove('bg-blue-200');
-                    btn.classList.add('bg-gray-200');
-                });
+            function showCustomerInfo(customer) {
+                document.getElementById('customer-info').classList.remove('hidden');
+                document.getElementById('customer-error').classList.add('hidden');
+                document.getElementById('customer-name').textContent = customer.name || '-';
+                document.getElementById('customer-mobile').textContent = customer.mobile || '-';
+                document.getElementById('customer-email').textContent = customer.email || '-';
+                // Show the top-up form
+                showTopUpForm();
             }
-            
-            // Function to add a message to the log
+            function showCustomerError(msg) {
+                document.getElementById('customer-error').textContent = msg;
+                document.getElementById('customer-error').classList.remove('hidden');
+                document.getElementById('customer-info').classList.add('hidden');
+                showCustomerForm();
+            }
             function addLogMessage(message, type = 'info') {
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = document.createElement('p');
-                
                 logEntry.textContent = `[${timestamp}] ${message}`;
-                
-                if (type === 'error') {
-                    logEntry.classList.add('text-red-500');
-                } else {
-                    logEntry.classList.add('text-gray-700');
-                }
-                
+                logEntry.classList.add(type === 'error' ? 'text-red-500' : 'text-gray-700');
                 activityLog.appendChild(logEntry);
                 activityLog.scrollTop = activityLog.scrollHeight;
             }
-            
-            // Function to play sound
-            function playSound(type) {
-                const audio = new Audio();
-                
-                switch (type) {
-                    case 'success':
-                        audio.src = '/static/core/sounds/beep.mp3';
-                        break;
-                    case 'error':
-                        audio.src = '/static/core/sounds/beep.mp3';
-                        break;
-                    default:
-                        audio.src = '/static/core/sounds/beep.mp3';
-                }
-                
-                audio.play().catch(error => {
-                    console.warn('Could not play sound:', error);
-                });
-            }
         });
-        
-        // QR Scan logic for new card issue
-        const scanBtn = document.getElementById('scan-qr-btn');
-        const qrReaderDiv = document.getElementById('qr-reader');
-        const manualCustomerId = document.getElementById('manual-customer-id');
-        const fetchBtn = document.getElementById('fetch-customer-btn');
-        const nameInput = document.getElementById('customer-name-input');
-        const mobileInput = document.getElementById('mobile-number');
-        
-        let html5QrCode;
-        
-        scanBtn.addEventListener('click', function() {
-            qrReaderDiv.classList.remove('hidden');
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
-            }
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-                (decodedText, decodedResult) => {
-                    html5QrCode.stop();
-                    qrReaderDiv.classList.add('hidden');
-                    manualCustomerId.value = decodedText;
-                    fetchCustomerDetails(decodedText);
-                },
-                (errorMessage) => {
-                    // ignore errors
-                }
-            ).catch(err => {
-                alert('Camera error: ' + err);
-            });
-        });
-        
-        fetchBtn.addEventListener('click', function() {
-            const id = manualCustomerId.value.trim();
-            if (id) fetchCustomerDetails(id);
-        });
-        
-        function fetchCustomerDetails(customerId) {
-            fetch(`/api/get_customer_details/?customer_id=${encodeURIComponent(customerId)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showCustomerInfo(data.customer);
-                        identifiedCustomerId = customerId;
-                        // --- FIX: Show form and enable next button ---
-                        document.getElementById('customer-info').classList.remove('hidden');
-                        document.getElementById('customer-form').classList.remove('hidden');
-                        document.getElementById('next-btn-new').classList.remove('hidden');
-                        document.getElementById('customer-error').classList.add('hidden');
-                    } else {
-                        showCustomerError(data.error || 'Customer not found by Serial No.');
-                        document.getElementById('customer-info').classList.add('hidden');
-                        document.getElementById('customer-form').classList.add('hidden');
-                        document.getElementById('next-btn-new').classList.add('hidden');
-                    }
-                })
-                .catch(() => {
-                    showCustomerError('Error fetching customer details by Serial No.');
-                    document.getElementById('customer-info').classList.add('hidden');
-                    document.getElementById('customer-form').classList.add('hidden');
-                    document.getElementById('next-btn-new').classList.add('hidden');
-                });
-        }
-        
-        // After fetching customer details successfully:
-        function showCustomerInfo(customer) {
-            document.getElementById('customer-info').classList.remove('hidden');
-            document.getElementById('customer-error').classList.add('hidden');
-            document.getElementById('customer-name').textContent = customer.name || '-';
-            document.getElementById('customer-mobile').textContent = customer.mobile || '-';
-            document.getElementById('customer-email').textContent = customer.email || '-';
-            // Show the top-up form
-            document.getElementById('top-up-form').classList.remove('hidden');
-        }
     </script>
 {% endblock %}
