@@ -229,279 +229,114 @@ class NFCUIHandler {
         this.container = document.getElementById(containerId);
         this.reader = reader;
         this.cardManager = cardManager;
-        
         if (!this.container) {
             console.error(`Container with ID '${containerId}' not found.`);
             return;
         }
-        
         this.initUI();
     }
 
-    /**
-     * Initialize the UI
-     */
     initUI() {
-        // Create UI elements
-        this.createUIElements();
-        
-        // Set up event listeners
+        // Minimal UI: Only scan button, status, and message
+        this.container.innerHTML = `
+            <div class="nfc-reader-container bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">NFC/QR Scan</h2>
+                <div class="nfc-status-container mb-4">
+                    <div class="flex items-center mb-2">
+                        <div id="nfc-status-indicator" class="w-4 h-4 rounded-full bg-gray-400 mr-2"></div>
+                        <span id="nfc-status-text" class="text-gray-600">Inactive</span>
+                    </div>
+                </div>
+                <button id="nfc-start-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 mb-4">
+                    Start Scan
+                </button>
+                <button id="nfc-stop-btn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 mb-4" disabled>
+                    Stop Scan
+                </button>
+                <div id="nfc-message" class="text-green-600 font-semibold mt-4"></div>
+            </div>
+        `;
+        this.statusIndicator = document.getElementById('nfc-status-indicator');
+        this.statusText = document.getElementById('nfc-status-text');
+        this.startButton = document.getElementById('nfc-start-btn');
+        this.stopButton = document.getElementById('nfc-stop-btn');
+        this.messageBox = document.getElementById('nfc-message');
         this.setupEventListeners();
-        
-        // Update UI based on NFC support
         this.updateUIForNFCSupport();
     }
 
-    /**
-     * Create UI elements
-     */
-    createUIElements() {
-        this.container.innerHTML = `
-            <div class="nfc-reader-container bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-semibold text-blue-600 mb-4">NFC Card Reader</h2>
-                
-                <div class="nfc-status-container mb-6">
-                    <div class="flex items-center mb-2">
-                        <div id="nfc-status-indicator" class="w-4 h-4 rounded-full bg-gray-400 mr-2"></div>
-                        <span id="nfc-status-text" class="text-gray-600">NFC Reader Inactive</span>
-                    </div>
-                    <p id="nfc-support-message" class="text-sm text-gray-500"></p>
-                </div>
-                
-                <div class="nfc-controls mb-6">
-                    <button id="nfc-start-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 mr-2">
-                        Start NFC Reader
-                    </button>
-                    <button id="nfc-stop-btn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 mr-2" disabled>
-                        Stop NFC Reader
-                    </button>
-                    <button id="nfc-simulate-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
-                        Simulate Card
-                    </button>
-                </div>
-                
-                <div class="nfc-card-info bg-gray-50 p-4 rounded-lg mb-6 hidden" id="nfc-card-info">
-                    <h3 class="text-lg font-medium text-blue-600 mb-2">Card Information</h3>
-                    <p><strong>Card ID:</strong> <span id="nfc-card-id">-</span></p>
-                    <p><strong>Read Time:</strong> <span id="nfc-read-time">-</span></p>
-                    <p><strong>Status:</strong> <span id="nfc-read-status">-</span></p>
-                </div>
-                
-                <div class="nfc-action-container mb-6 hidden" id="nfc-action-container">
-                    <h3 class="text-lg font-medium text-blue-600 mb-2">Select Action</h3>
-                    <select id="nfc-action-select" class="w-full p-2 border border-gray-300 rounded-lg">
-                        <option value="">-- Select Action --</option>
-                        <option value="check_in">Check In</option>
-                        <option value="check_out">Check Out</option>
-                        <option value="verify">Verify Identity</option>
-                    </select>
-                    <button id="nfc-submit-action-btn" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                        Submit Action
-                    </button>
-                </div>
-                
-                <div class="nfc-log-container">
-                    <h3 class="text-lg font-medium text-blue-600 mb-2">Activity Log</h3>
-                    <div id="nfc-log" class="bg-gray-50 p-4 rounded-lg h-40 overflow-y-auto text-sm">
-                        <p class="text-gray-500">NFC reader initialized.</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Get references to UI elements
-        this.statusIndicator = document.getElementById('nfc-status-indicator');
-        this.statusText = document.getElementById('nfc-status-text');
-        this.supportMessage = document.getElementById('nfc-support-message');
-        this.startButton = document.getElementById('nfc-start-btn');
-        this.stopButton = document.getElementById('nfc-stop-btn');
-        this.simulateButton = document.getElementById('nfc-simulate-btn');
-        this.cardInfo = document.getElementById('nfc-card-info');
-        this.cardId = document.getElementById('nfc-card-id');
-        this.readTime = document.getElementById('nfc-read-time');
-        this.readStatus = document.getElementById('nfc-read-status');
-        this.actionContainer = document.getElementById('nfc-action-container');
-        this.actionSelect = document.getElementById('nfc-action-select');
-        this.submitActionButton = document.getElementById('nfc-submit-action-btn');
-        this.logContainer = document.getElementById('nfc-log');
-    }
-
-    /**
-     * Set up event listeners
-     */
     setupEventListeners() {
-        // Start button
         this.startButton.addEventListener('click', async () => {
             const started = await this.reader.startReading();
             if (started) {
                 this.updateReaderStatus(true);
-                this.addLogMessage('NFC reader started.');
+                this.showMessage('Ready to scan. Please scan your card or QR.');
             } else {
-                this.addLogMessage('Failed to start NFC reader.', 'error');
+                this.showMessage('Failed to start reader.', true);
             }
         });
-        
-        // Stop button
         this.stopButton.addEventListener('click', () => {
             this.reader.stopReading();
             this.updateReaderStatus(false);
-            this.addLogMessage('NFC reader stopped.');
+            this.showMessage('Reader stopped.');
         });
-        
-        // Simulate button
-        this.simulateButton.addEventListener('click', () => {
-            this.reader.simulateReading();
-            this.addLogMessage('Simulated NFC card reading.');
-        });
-        
-        // Submit action button
-        this.submitActionButton.addEventListener('click', async () => {
-            const action = this.actionSelect.value;
-            if (!action) {
-                this.addLogMessage('Please select an action.', 'error');
-                return;
-            }
-            
-            const cardId = this.cardId.textContent;
-            if (cardId === '-') {
-                this.addLogMessage('No card detected. Please scan a card first.', 'error');
-                return;
-            }
-            
-            try {
-                const response = await this.cardManager.sendCardData({ serialNumber: cardId }, action);
-                this.addLogMessage(`Action "${action}" submitted successfully.`);
-                this.actionContainer.classList.add('hidden');
-            } catch (error) {
-                this.addLogMessage(`Error submitting action: ${error.message}`, 'error');
-            }
-        });
-        
-        // Set up reader callbacks
+        // On successful scan
         this.reader.options.onReading = (cardData) => {
-            this.handleCardReading(cardData);
+            this.showMessage('QR scanned! Data fetched successfully.');
+            this.updateReaderStatus(false);
+            // Automatically trigger the next step if a callback is provided
+            if (typeof this.options.onSuccess === 'function') {
+                this.options.onSuccess(cardData);
+            }
+            // Optionally, you can trigger a custom event for the UI to listen to
+            const event = new CustomEvent('nfc-scan-success', { detail: cardData });
+            document.dispatchEvent(event);
         };
-        
         this.reader.options.onError = (error) => {
-            this.addLogMessage(`Error: ${error.message || error}`, 'error');
+            this.showMessage('Error: ' + (error.message || error), true);
         };
-        
-        this.reader.options.onSuccess = (message) => {
-            this.addLogMessage(message);
+        this.reader.options.onSuccess = (msg) => {
+            // Optionally show success
         };
-        
         this.reader.options.onNotSupported = () => {
-            this.updateUIForNFCSupport();
+            this.showMessage('NFC is not supported in this browser.', true);
         };
     }
 
-    /**
-     * Update UI based on NFC support
-     */
     updateUIForNFCSupport() {
         if (this.reader.nfcSupported) {
-            this.supportMessage.textContent = 'NFC is supported in this browser.';
-            this.supportMessage.classList.remove('text-red-500');
-            this.supportMessage.classList.add('text-green-500');
-            this.startButton.disabled = false;
-        } else {
-            this.supportMessage.textContent = 'NFC is not supported in this browser. You can use the simulation feature instead.';
-            this.supportMessage.classList.remove('text-green-500');
-            this.supportMessage.classList.add('text-red-500');
-            this.startButton.disabled = true;
-        }
-    }
-
-    /**
-     * Update reader status in UI
-     * @param {boolean} isActive - Whether the reader is active
-     */
-    updateReaderStatus(isActive) {
-        if (isActive) {
             this.statusIndicator.classList.remove('bg-gray-400', 'bg-red-500');
             this.statusIndicator.classList.add('bg-green-500');
-            this.statusText.textContent = 'NFC Reader Active';
+            this.statusText.textContent = 'Ready';
+            this.startButton.disabled = false;
+        } else {
+            this.statusIndicator.classList.remove('bg-green-500');
+            this.statusIndicator.classList.add('bg-gray-400');
+            this.statusText.textContent = 'Not Supported';
+            this.startButton.disabled = true;
+        }
+        this.stopButton.disabled = true;
+    }
+
+    updateReaderStatus(isActive) {
+        if (isActive) {
+            this.statusIndicator.classList.remove('bg-gray-400');
+            this.statusIndicator.classList.add('bg-green-500');
+            this.statusText.textContent = 'Scanning...';
             this.startButton.disabled = true;
             this.stopButton.disabled = false;
         } else {
-            this.statusIndicator.classList.remove('bg-green-500', 'bg-red-500');
+            this.statusIndicator.classList.remove('bg-green-500');
             this.statusIndicator.classList.add('bg-gray-400');
-            this.statusText.textContent = 'NFC Reader Inactive';
+            this.statusText.textContent = 'Inactive';
             this.startButton.disabled = false;
             this.stopButton.disabled = true;
-            
-            // Hide card info and action container when reader is stopped
-            this.cardInfo.classList.add('hidden');
-            this.actionContainer.classList.add('hidden');
         }
     }
 
-    /**
-     * Handle card reading
-     * @param {Object} cardData - The NFC card data
-     */
-    handleCardReading(cardData) {
-        // Update card info
-        this.cardId.textContent = cardData.serialNumber;
-        this.readTime.textContent = new Date().toLocaleTimeString();
-        this.readStatus.textContent = 'Success';
-        
-        // Show card info and action container
-        this.cardInfo.classList.remove('hidden');
-        this.actionContainer.classList.remove('hidden');
-        
-        // Add log message
-        this.addLogMessage(`Card detected: ${cardData.serialNumber}`);
-        
-        // Play a sound to indicate successful reading
-        this.playSound('success');
-    }
-
-    /**
-     * Add a message to the log
-     * @param {string} message - The message to add
-     * @param {string} type - The type of message (info, error, etc.)
-     */
-    addLogMessage(message, type = 'info') {
-        const timestamp = new Date().toLocaleTimeString();
-        const logEntry = document.createElement('p');
-        
-        logEntry.textContent = `[${timestamp}] ${message}`;
-        
-        if (type === 'error') {
-            logEntry.classList.add('text-red-500');
-        } else {
-            logEntry.classList.add('text-gray-700');
-        }
-        
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-    }
-
-    /**
-     * Play a sound
-     * @param {string} type - The type of sound to play
-     */
-    playSound(type) {
-        // Create audio element
-        const audio = new Audio();
-        
-        // Set source based on type
-        switch (type) {
-            case 'success':
-                audio.src = '/static/core/sounds/success.mp3';
-                break;
-            case 'error':
-                audio.src = '/static/core/sounds/error.mp3';
-                break;
-            default:
-                audio.src = '/static/core/sounds/beep.mp3';
-        }
-        
-        // Play the sound
-        audio.play().catch(error => {
-            console.warn('Could not play sound:', error);
-        });
+    showMessage(msg, isError = false) {
+        this.messageBox.textContent = msg;
+        this.messageBox.className = isError ? 'text-red-600 font-semibold mt-4' : 'text-green-600 font-semibold mt-4';
     }
 }
 
