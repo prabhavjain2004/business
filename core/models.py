@@ -38,6 +38,7 @@ class Customer(models.Model):
     email = models.EmailField(unique=True)
     email_verified = models.BooleanField(default=False)
     email_verification_code = models.CharField(max_length=6, blank=True)
+    serial_no = models.PositiveIntegerField(unique=True, blank=True, null=True, help_text="Auto-incrementing serial number starting from 1000")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -241,3 +242,13 @@ def ensure_outlet_volunteer_unique_id(sender, instance, **kwargs):
     """Ensure OutletVolunteer has a unique_id before saving"""
     if not instance.unique_id:
         instance.unique_id = generate_unique_id(OutletVolunteer)
+
+# Signal to auto-increment serial_no for Customer
+@receiver(pre_save, sender=Customer)
+def ensure_customer_serial_no(sender, instance, **kwargs):
+    if instance.serial_no is None:
+        last = Customer.objects.all().order_by('-serial_no').first()
+        if last and last.serial_no:
+            instance.serial_no = last.serial_no + 1
+        else:
+            instance.serial_no = 1000

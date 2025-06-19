@@ -1061,17 +1061,33 @@ def get_customer_by_id(request, customer_id):
 @require_GET
 @csrf_exempt
 def get_customer_details_by_id(request):
-    """API endpoint to fetch customer details by customer_id (random number)"""
+    """API endpoint to fetch customer details by customer_id (serial_no or random_id)"""
     customer_id = request.GET.get('customer_id')
     if not customer_id:
-        return JsonResponse({'error': 'Customer ID required'}, status=400)
+        return JsonResponse({'success': False, 'error': 'Customer ID required'}, status=400)
+    # Try Customer model (serial_no)
     try:
-        profile = Profile.objects.get(random_no=customer_id)
+        customer = Customer.objects.get(serial_no=customer_id)
+        data = {
+            'name': customer.name,
+            'mobile': customer.mobile_no,
+            'email': customer.email,
+            'serial_no': customer.serial_no,
+        }
+        return JsonResponse({'success': True, 'customer': data})
+    except Customer.DoesNotExist:
+        pass
+    # Try Profile model (random_id)
+    try:
+        from .models import Profile
+        profile = Profile.objects.get(random_id=customer_id)
         data = {
             'name': profile.name,
             'mobile': profile.mobile_no,
             'email': profile.email,
+            'serial_no': profile.random_id,
         }
         return JsonResponse({'success': True, 'customer': data})
     except Profile.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+        pass
+    return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
