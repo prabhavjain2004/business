@@ -40,7 +40,7 @@
                             <button type="button" id="scan-qr-btn" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">Scan QR</button>
                             <div id="qr-reader" class="hidden"></div>
                             <label for="manual-customer-id" class="block text-gray-700 mt-2">Or enter Customer ID manually</label>
-                            <input type="text" id="manual-customer-id" name="manual-customer-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter Customer ID">
+                            <input type="text" id="manual-customer-id" name="manual-customer-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter Serial No. (Code)">
                             <button type="button" id="fetch-customer-btn" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg mt-2">Fetch Details</button>
                         </div>
                         <!-- Show fetched customer details as read-only -->
@@ -951,7 +951,7 @@
         // QR Scan logic for new card issue
         const scanBtn = document.getElementById('scan-qr-btn');
         const qrReaderDiv = document.getElementById('qr-reader');
-        const manualIdInput = document.getElementById('manual-customer-id');
+        const manualCustomerId = document.getElementById('manual-customer-id');
         const fetchBtn = document.getElementById('fetch-customer-btn');
         const nameInput = document.getElementById('customer-name-input');
         const mobileInput = document.getElementById('mobile-number');
@@ -967,7 +967,7 @@
                 (decodedText, decodedResult) => {
                     html5QrCode.stop();
                     qrReaderDiv.classList.add('hidden');
-                    manualIdInput.value = decodedText;
+                    manualCustomerId.value = decodedText;
                     fetchCustomerDetails(decodedText);
                 },
                 (errorMessage) => {
@@ -979,43 +979,22 @@
         });
         
         fetchBtn.addEventListener('click', function() {
-            const id = manualIdInput.value.trim();
+            const id = manualCustomerId.value.trim();
             if (id) fetchCustomerDetails(id);
         });
         
         function fetchCustomerDetails(customerId) {
-            fetch(`/api/customer/${customerId}/`)
+            fetch(`/api/get_customer_details/?customer_id=${encodeURIComponent(customerId)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        nameInput.value = data.name;
-                        mobileInput.value = data.mobile;
-                        nameInput.readOnly = true;
-                        mobileInput.readOnly = true;
-                        
-                        // Show customer info and form
-                        document.getElementById('customer-info').classList.remove('hidden');
-                        document.getElementById('customer-form').classList.remove('hidden');
-                        document.getElementById('next-btn-new').classList.remove('hidden');
-                        document.getElementById('customer-error').classList.add('hidden');
+                        showCustomerInfo(data.customer);
+                        identifiedCustomerId = customerId;
                     } else {
-                        alert('Customer not found. Please enter details manually.');
-                        nameInput.value = '';
-                        mobileInput.value = '';
-                        nameInput.readOnly = false;
-                        mobileInput.readOnly = false;
-                        
-                        // Hide customer info and form
-                        document.getElementById('customer-info').classList.add('hidden');
-                        document.getElementById('customer-form').classList.add('hidden');
-                        document.getElementById('next-btn-new').classList.add('hidden');
-                        document.getElementById('customer-error').classList.remove('hidden');
-                        document.getElementById('customer-error').textContent = 'Customer not found. Please enter details manually.';
+                        showCustomerError(data.error || 'Customer not found by Serial No.');
                     }
                 })
-                .catch(() => {
-                    alert('Error fetching customer details.');
-                });
+                .catch(() => showCustomerError('Error fetching customer details by Serial No.'));
         }
     </script>
 {% endblock %}

@@ -75,12 +75,10 @@ class OutletForm(forms.ModelForm):
 class NFCCardForm(forms.ModelForm):
     class Meta:
         model = NFCCard
-        fields = ['card_id', 'name', 'customer_name', 'mobile_number', 'balance', 'is_active']
+        fields = ['card_id', 'customer', 'balance', 'is_active']
         widgets = {
             'card_id': forms.TextInput(attrs={'class': 'form-input', 'readonly': 'readonly'}),
-            'name': forms.TextInput(attrs={'class': 'form-input'}),
-            'customer_name': forms.TextInput(attrs={'class': 'form-input'}),
-            'mobile_number': forms.TextInput(attrs={'class': 'form-input'}),
+            'customer': forms.Select(attrs={'class': 'form-select'}),
             'balance': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }

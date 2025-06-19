@@ -55,8 +55,8 @@ def customer_details_view(request):
             customer.email_verified = True
             customer.email_verification_code = ''
             customer.save()
-            # Generate customer_id (random no.)
-            customer_id = customer.id  # or use a custom field if needed
+            # Generate customer_id (serial no.)
+            customer_id = customer.serial_no  # Use serial_no as the unique code
             # Generate QR code (not saved, just generated on the fly)
             import qrcode
             from io import BytesIO
@@ -81,10 +81,11 @@ def customer_details_view(request):
             # Clear session
             del request.session['customer_confirm_pending']
             del request.session['customer_confirm_data']
-            # Render success page with QR and ID
+            # Render success page with QR and serial no.
             return render(request, 'core/customer_success.html', {
                 'customer_id': customer_id,
                 'qr_code_data': qr_code_data,
+                'customer': customer,
             })
         else:
             return render(request, 'core/customer_details.html', {
@@ -758,38 +759,31 @@ def nfc_api(request):
             # Handle specific actions
             if action == 'issue_card':
                 # Check if the card has already been issued
-                if card.customer_name or card.mobile_number or float(card.balance) > 0:
+                if card.customer_id is not None:
                     return JsonResponse({
                         'status': 'error',
                         'message': 'This card has already been issued and cannot be re-issued.',
                         'card_id': card.card_id,
-                        'customer_name': card.customer_name,
-                        'mobile_number': card.mobile_number,
+                        'customer_id': card.customer_id,
                         'balance': float(card.balance)
                     }, status=400)
-                
-                customer_name = data.get('customer_name', '')
-                mobile_number = data.get('mobile_number', '')
+                serial_no = data.get('serial_no')
                 initial_balance = data.get('initial_balance', 0)
-                payment_method = data.get('payment_method', 'cash')  # Default to cash if not provided
-                
-                # Update card with customer info and balance
-                card.customer_name = customer_name
-                card.mobile_number = mobile_number
+                payment_method = data.get('payment_method', 'cash')
+                # Link card to customer
+                try:
+                    customer = Customer.objects.get(serial_no=serial_no)
+                except Customer.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Customer not found by Serial No.'}, status=404)
+                card.customer = customer
                 card.balance = initial_balance
-                
-                # Ensure the card has a secure_key (should be handled by pre_save signal, but double-check)
                 if not card.secure_key:
-                    # Generate a unique secure key
                     while True:
                         secure_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
                         if not NFCCard.objects.filter(secure_key=secure_key).exists():
                             card.secure_key = secure_key
                             break
-                
                 card.save()
-                
-                # Create transaction record for the card issuance
                 transaction = Transaction.objects.create(
                     card=card,
                     card_identifier=card.card_id,
@@ -800,30 +794,19 @@ def nfc_api(request):
                     status='completed',
                     notes='Card issuance transaction'
                 )
-                
-                # If user is authenticated, add user and outlet info
                 if request.user.is_authenticated:
                     transaction.user = request.user
                     if hasattr(request.user, 'outlet'):
                         transaction.outlet = request.user.outlet
                     transaction.save()
-                
-                action_description = f"Card issued to {customer_name} with initial balance {initial_balance} (Payment: {payment_method})"
-            
+                action_description = f"Card issued to {customer.name} with initial balance {initial_balance} (Payment: {payment_method})"
             elif action == 'top_up':
                 amount = data.get('amount', 0)
-                payment_method = data.get('payment_method', 'cash')  # Default to cash if not provided
-                
-                # Retrieve current balance
+                payment_method = data.get('payment_method', 'cash')
                 current_balance = float(card.balance)
-                # Calculate new balance
                 new_balance = current_balance + float(amount)
-                
-                # Update card balance
                 card.balance = new_balance
                 card.save()
-                
-                # Create transaction record for the top-up
                 transaction = Transaction.objects.create(
                     card=card,
                     card_identifier=card.card_id,
@@ -834,19 +817,12 @@ def nfc_api(request):
                     status='completed',
                     notes='Top-up transaction'
                 )
-                
-                # If user is authenticated, add user and outlet info
                 if request.user.is_authenticated:
                     transaction.user = request.user
                     if hasattr(request.user, 'outlet'):
                         transaction.outlet = request.user.outlet
                     transaction.save()
-                
-                # Log the updated balance
-                print(f"Updated balance for card {card.card_id}: {current_balance} + {amount} = {new_balance}")
-                
                 action_description = f"Top-up of {amount} added to card (Payment: {payment_method})"
-            
             elif action == 'balance_inquiry':
                 action_description = f"Balance inquiry: Current balance is {card.balance}"
             
@@ -1000,7 +976,12 @@ def nfc_api(request):
             # Add balance to response for balance inquiry
             if action == 'balance_inquiry':
                 response_data['balance'] = float(card.balance)
-                response_data['customer_name'] = card.customer_name
+                if card.customer:
+                    response_data['customer_name'] = card.customer.name
+                    response_data['mobile_number'] = card.customer.mobile_no
+                else:
+                    response_data['customer_name'] = None
+                    response_data['mobile_number'] = None
                 
                 # Add transactions related to this card: amount, timestamp, outlet name
                 transactions = Transaction.objects.filter(card=card).order_by('-timestamp')[:10]
@@ -1061,7 +1042,7 @@ def get_customer_by_id(request, customer_id):
 @require_GET
 @csrf_exempt
 def get_customer_details_by_id(request):
-    """API endpoint to fetch customer details by customer_id (serial_no or random_id)"""
+    """API endpoint to fetch customer details by customer_id (serial_no)"""
     customer_id = request.GET.get('customer_id')
     if not customer_id:
         return JsonResponse({'success': False, 'error': 'Customer ID required'}, status=400)
@@ -1076,18 +1057,4 @@ def get_customer_details_by_id(request):
         }
         return JsonResponse({'success': True, 'customer': data})
     except Customer.DoesNotExist:
-        pass
-    # Try Profile model (random_id)
-    try:
-        from .models import Profile
-        profile = Profile.objects.get(random_id=customer_id)
-        data = {
-            'name': profile.name,
-            'mobile': profile.mobile_no,
-            'email': profile.email,
-            'serial_no': profile.random_id,
-        }
-        return JsonResponse({'success': True, 'customer': data})
-    except Profile.DoesNotExist:
-        pass
-    return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+        return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)

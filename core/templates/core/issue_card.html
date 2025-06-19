@@ -18,7 +18,7 @@
                             <button id="scan-qr-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">Scan QR Code</button>
                             <div id="qr-reader" class="w-full max-w-xs hidden"></div>
                             <div class="w-full flex items-center gap-2">
-                                <input type="text" id="manual-customer-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter Customer ID (Random No.)">
+                                <input type="text" id="manual-customer-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter Serial No. (Code)">
                                 <button id="fetch-customer-btn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">Fetch</button>
                             </div>
                         </div>
@@ -90,10 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     showCustomerInfo(data.customer);
                     identifiedCustomerId = customerId;
                 } else {
-                    showCustomerError(data.error || 'Customer not found');
+                    showCustomerError(data.error || 'Customer not found by Serial No.');
                 }
             })
-            .catch(() => showCustomerError('Error fetching customer details'));
+            .catch(() => showCustomerError('Error fetching customer details by Serial No.'));
     }
     scanQrBtn.addEventListener('click', function() {
         qrReader.classList.remove('hidden');

@@ -340,8 +340,8 @@ class OutletAdmin(admin.ModelAdmin):
     list_filter = ('is_active',)
 
 class NFCCardAdmin(admin.ModelAdmin):
-    list_display = ('card_id', 'name', 'customer_name', 'balance', 'is_active')
-    search_fields = ('card_id', 'name', 'customer_name')
+    list_display = ('card_id', 'customer', 'balance', 'is_active')
+    search_fields = ('card_id', 'customer__name')
     list_filter = ('is_active',)
 
 class NFCLogAdmin(admin.ModelAdmin):

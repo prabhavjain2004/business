@@ -112,16 +112,14 @@ class NFCCard(models.Model):
     card_id = models.CharField(max_length=255, unique=True, help_text="Unique identifier of the NFC card")
     secure_key = models.CharField(max_length=16, unique=True, blank=True,
                                  help_text="Secure 16-character alphanumeric key for transactions")
-    name = models.CharField(max_length=100, blank=True, help_text="Optional name for the card")
-    customer_name = models.CharField(max_length=100, blank=True, help_text="Name of the customer")
-    mobile_number = models.CharField(max_length=15, blank=True, help_text="Mobile number of the customer")
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='cards', null=True, blank=True, help_text="Linked customer")
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Current balance on the card")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"{self.name} ({self.card_id})" if self.name else self.card_id
+        return f"{self.customer.name} ({self.card_id})" if self.customer else self.card_id
     
     def generate_secure_key(self):
         """Generate a random 16-character alphanumeric secure key"""
