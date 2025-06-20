@@ -718,10 +718,9 @@ def nfc_api(request):
             
             # If this is a new card being registered
             if card_id and not secure_key and action not in ['balance_inquiry', 'top_up', 'payment']:
-                # Get or create the card with a new secure key
+                # Get or create the card
                 card, created = NFCCard.objects.get_or_create(
-                    card_id=card_id,
-                    defaults={'name': f'Card {card_id[:8]}...'}
+                    card_id=card_id
                 )
             # For transactions, use the secure key instead of card_id
             elif secure_key:
@@ -759,12 +758,12 @@ def nfc_api(request):
             # Handle specific actions
             if action == 'issue_card':
                 # Check if the card has already been issued
-                if card.customer_id is not None:
+                if card.customer is not None:
                     return JsonResponse({
                         'status': 'error',
                         'message': 'This card has already been issued and cannot be re-issued.',
                         'card_id': card.card_id,
-                        'customer_id': card.customer_id,
+                        'customer_id': card.customer.id,
                         'balance': float(card.balance)
                     }, status=400)
                 serial_no = data.get('serial_no')
