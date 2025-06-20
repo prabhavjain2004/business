@@ -7,52 +7,33 @@
 <div class="min-h-screen bg-white w-full overflow-x-hidden">
     <div class="container mx-auto px-2 sm:px-4 py-8 max-w-full w-full">
         <h1 class="text-3xl font-bold text-blue-600 mb-8">Balance Inquiry</h1>
-        
         <div class="grid grid-cols-1 gap-6 w-full">
             <!-- NFC Reader Container -->
             <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md w-full">
-                <div id="balance-inquiry-container">
-                    <!-- Step 1: Scan Card -->
-                    <div id="step-1" class="step-container">
-                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Tap Card to Check Balance</h2>
-                        <p class="text-lg text-center mb-4">Please tap an NFC card to check balance</p>
+                <div id="nfc-reader"></div>
+                <!-- Step 2: Display Balance -->
+                <div id="step-2" class="step-container hidden mt-8">
+                    <div class="text-center">
                         <div class="flex justify-center mb-4">
-                            <div class="animate-pulse bg-blue-100 rounded-full p-8">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            <div class="bg-green-100 rounded-full p-8">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
                         </div>
-                        <p id="scan-status" class="text-center text-gray-600">Waiting for card...</p>
-                    </div>
-                    
-                    <!-- Step 2: Display Balance -->
-                    <div id="step-2" class="step-container hidden">
-                        <div class="text-center">
-                            <div class="flex justify-center mb-4">
-                                <div class="bg-green-100 rounded-full p-8">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <h3 class="text-xl font-semibold text-green-600 mb-4">Card Balance</h3>
-                            <div class="bg-gray-100 p-6 rounded-lg mb-6">
-                                <p class="mb-2"><strong>Card ID:</strong> <span id="card-id"></span></p>
-                                <p class="mb-2"><strong>Customer:</strong> <span id="customer-name">-</span></p>
-                                <p class="mb-2"><strong>Mobile:</strong> <span id="mobile-number">-</span></p>
-                                <p class="text-3xl font-bold text-blue-600 mt-4"><span id="balance-amount">-</span></p>
-                            </div>
-                            <div class="flex justify-center">
-                                <a href="{% url 'dashboard' %}" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
-                                    Back to Dashboard
-                                </a>
-                            </div>
+                        <h3 class="text-xl font-semibold text-green-600 mb-4">Card Balance</h3>
+                        <div class="bg-gray-100 p-6 rounded-lg mb-6">
+                            <p class="mb-2"><strong>Card ID:</strong> <span id="card-id"></span></p>
+                            <p class="mb-2"><strong>Customer:</strong> <span id="customer-name">-</span></p>
+                            <p class="mb-2"><strong>Mobile:</strong> <span id="mobile-number">-</span></p>
+                            <p class="text-3xl font-bold text-blue-600 mt-4"><span id="balance-amount">-</span></p>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="check-another-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">Check Another Card</button>
                         </div>
                     </div>
                 </div>
             </div>
-            
             <!-- Activity Log -->
             <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md w-full">
                 <h2 class="text-xl font-semibold text-blue-600 mb-4">Activity Log</h2>
@@ -61,7 +42,6 @@
                 </div>
             </div>
         </div>
-        
         <div class="mt-8 flex justify-center">
             <a href="{% url 'dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
                 Back to Dashboard
@@ -69,7 +49,6 @@
         </div>
     </div>
 </div>
-
 <!-- NFC Support Fallback Message -->
 <div id="nfc-fallback-message" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
@@ -99,7 +78,6 @@
         </div>
     </div>
 </div>
-
 <!-- Error Message Modal -->
 <div id="nfc-error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
@@ -131,9 +109,6 @@
     <script src="{% static 'core/js/nfc.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize NFC Card Manager
-            const cardManager = new NFCCardManager('/api/nfc/');
-            
             // Get fallback and error modal elements
             const nfcFallbackMessage = document.getElementById('nfc-fallback-message');
             const nfcErrorModal = document.getElementById('nfc-error-modal');
@@ -141,145 +116,72 @@
             const nfcErrorMessage = document.getElementById('nfc-error-message');
             const nfcFallbackCloseBtn = document.getElementById('nfc-fallback-close-btn');
             const nfcErrorCloseBtn = document.getElementById('nfc-error-close-btn');
-            
-            // Add event listeners for fallback and error modals
-            nfcFallbackCloseBtn.addEventListener('click', function() {
-                nfcFallbackMessage.classList.add('hidden');
-            });
-            
-            nfcErrorCloseBtn.addEventListener('click', function() {
-                nfcErrorModal.classList.add('hidden');
-            });
-            
-            // Initialize NFC Reader
-            const nfcReader = new NFCReader({
-                onReading: handleNFCReading,
-                onError: handleNFCError,
-                onNotSupported: handleNFCNotSupported
-            });
-            
-            // Current operation state
-            let currentStep = 1;
-            
-            // Get step containers
-            const step1 = document.getElementById('step-1');
             const step2 = document.getElementById('step-2');
-            
-            // Get status elements
-            const scanStatus = document.getElementById('scan-status');
-            
-            // Get card info elements
             const cardId = document.getElementById('card-id');
             const customerName = document.getElementById('customer-name');
             const mobileNumber = document.getElementById('mobile-number');
             const balanceAmount = document.getElementById('balance-amount');
-            
-            // Get buttons
             const checkAnotherBtn = document.getElementById('check-another-btn');
-            
-            // Get activity log
             const activityLog = document.getElementById('activity-log');
-            
-            // Add event listeners for buttons
-            checkAnotherBtn.addEventListener('click', resetProcess);
-            
-            // Start NFC reader
-            nfcReader.startReading();
-            addLogMessage('NFC reader started. Waiting for card...');
-            
-            // Function to handle NFC reading
-            function handleNFCReading(cardData) {
-                const cardIdValue = cardData.serialNumber;
-                
-                scanStatus.textContent = `Card detected: ${cardIdValue}`;
-                addLogMessage(`Card detected: ${cardIdValue}`);
-                
-                // Get card info from server
-                cardManager.sendCardData(
-                    { serialNumber: cardIdValue },
-                    'balance_inquiry'
-                ).then(response => {
-                    // Update card info
-                    cardId.textContent = cardIdValue;
-                    customerName.textContent = response.customer_name || '-';
-                    mobileNumber.textContent = response.mobile_number || '-';
-                    balanceAmount.textContent = `₹${response.balance || 0}`;
-                    
-                    addLogMessage(`Card balance: ₹${response.balance || 0}`);
-                    
-                    // Move to step 2
-                    showStep(2);
-                }).catch(error => {
-                    scanStatus.textContent = `Error: ${error.message}`;
-                    addLogMessage(`Error: ${error.message}`, 'error');
-                });
-            }
-            
-            // Function to handle NFC not supported
-            function handleNFCNotSupported() {
-                console.warn('NFC is not supported on this device/browser');
-                addLogMessage('NFC is not supported on this device/browser', 'error');
-                
-                // Show the fallback message
-                nfcFallbackMessage.classList.remove('hidden');
-            }
-            
-            // Function to handle NFC errors
-            function handleNFCError(error) {
-                console.error('NFC Error:', error);
-                addLogMessage(`NFC Error: ${error.message || error}`, 'error');
-                
-                // Show the error modal
-                nfcErrorTitle.textContent = 'NFC Error';
-                nfcErrorMessage.textContent = error.message || error;
-                nfcErrorModal.classList.remove('hidden');
-            }
-            
-            // Function to reset the process
-            function resetProcess() {
-                // Reset state
-                currentStep = 1;
-                
-                // Reset scan status
-                scanStatus.textContent = 'Waiting for card...';
-                
-                // Show step 1
-                showStep(1);
-                addLogMessage('Process reset. Waiting for card...');
-                
-                // Restart NFC reader
-                nfcReader.startReading();
-            }
-            
-            // Function to show step
-            function showStep(step) {
-                currentStep = step;
-                
-                // Hide all steps
-                step1.classList.add('hidden');
-                step2.classList.add('hidden');
-                
-                // Show requested step
-                if (step === 1) {
-                    step1.classList.remove('hidden');
-                } else if (step === 2) {
+
+            // Add event listeners for fallback and error modals
+            nfcFallbackCloseBtn.addEventListener('click', function() {
+                nfcFallbackMessage.classList.add('hidden');
+            });
+            nfcErrorCloseBtn.addEventListener('click', function() {
+                nfcErrorModal.classList.add('hidden');
+            });
+
+            // Listen for NFC scan success event
+            document.addEventListener('nfc-scan-success', function(e) {
+                const cardData = e.detail;
+                addLogMessage(`Card detected: ${cardData.serialNumber}`);
+                // Fetch balance from server
+                fetch('/api/nfc/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': (new NFCCardManager()).getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        card_id: cardData.serialNumber,
+                        action: 'balance_inquiry',
+                        timestamp: new Date().toISOString()
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    cardId.textContent = cardData.serialNumber;
+                    customerName.textContent = data.customer_name || '-';
+                    mobileNumber.textContent = data.mobile_number || '-';
+                    balanceAmount.textContent = `₹${data.balance || 0}`;
+                    addLogMessage(`Card balance: ₹${data.balance || 0}`);
                     step2.classList.remove('hidden');
-                }
-            }
-            
-            // Function to add a message to the log
+                })
+                .catch(error => {
+                    addLogMessage(`Error: ${error.message}`, 'error');
+                    nfcErrorTitle.textContent = 'NFC Error';
+                    nfcErrorMessage.textContent = error.message || error;
+                    nfcErrorModal.classList.remove('hidden');
+                });
+            });
+
+            // Check Another Card
+            checkAnotherBtn.addEventListener('click', function() {
+                step2.classList.add('hidden');
+                addLogMessage('Ready for next scan.');
+            });
+
+            // Helper to add log messages
             function addLogMessage(message, type = 'info') {
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = document.createElement('p');
-                
                 logEntry.textContent = `[${timestamp}] ${message}`;
-                
                 if (type === 'error') {
                     logEntry.classList.add('text-red-500');
                 } else {
                     logEntry.classList.add('text-gray-700');
                 }
-                
                 activityLog.appendChild(logEntry);
                 activityLog.scrollTop = activityLog.scrollHeight;
             }
