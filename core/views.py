@@ -703,308 +703,140 @@ def delete_nfc_card(request, card_id):
 
 @csrf_exempt
 def nfc_api(request):
-    """API endpoint for NFC card operations"""
     if request.method == 'POST':
         try:
-            # Parse JSON data
             data = json.loads(request.body)
-            card_id = data.get('card_id')
-            secure_key = data.get('secure_key')
-            action = data.get('action', '')
-            
-            # For initial card registration, we need the card_id
-            if not card_id and not secure_key:
-                return JsonResponse({'status': 'error', 'message': 'Card ID or Secure Key is required'}, status=400)
-            
-            # If this is a new card being registered
-            if card_id and not secure_key and action not in ['balance_inquiry', 'top_up', 'payment']:
-                # Get or create the card
-                card, created = NFCCard.objects.get_or_create(
-                    card_id=card_id
-                )
-            # For transactions, use the secure key instead of card_id
-            elif secure_key:
-                try:
-                    card = NFCCard.objects.get(secure_key=secure_key)
-                    created = False
-                except NFCCard.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Invalid secure key'}, status=400)
-            # If only card_id is provided for transactions
-            elif card_id:
-                try:
-                    card = NFCCard.objects.get(card_id=card_id)
-                    created = False
-                except NFCCard.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Card not found'}, status=400)
-            
-            # Enforce payment method restrictions for top_up and issue_card
-            if action in ['top_up', 'issue_card']:
-                payment_method = data.get('payment_method', 'cash')
-                if payment_method not in ['cash', 'upi']:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Invalid payment method for top-up or card issuance. Only cash and UPI are allowed.'
-                    }, status=400)
-            
-            # Enforce NFC-only payment for outlets
-            if action == 'payment':
-                payment_method = data.get('payment_method', 'nfc')
-                if payment_method != 'nfc':
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Invalid payment method for outlet payment. Only NFC payments are allowed.'
-                    }, status=400)
-            
-            # Handle specific actions
-            if action == 'issue_card':
-                # Check if the card has already been issued
-                if card.customer is not None:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'This card has already been issued and cannot be re-issued.',
-                        'card_id': card.card_id,
-                        'customer_id': card.customer.id,
-                        'balance': float(card.balance)
-                    }, status=400)
-                serial_no = data.get('serial_no')
-                initial_balance = data.get('initial_balance', 0)
-                payment_method = data.get('payment_method', 'cash')
-                # Link card to customer
-                try:
-                    customer = Customer.objects.get(serial_no=serial_no)
-                except Customer.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Customer not found by Serial No.'}, status=404)
-                card.customer = customer
-                card.balance = initial_balance
-                if not card.secure_key:
-                    while True:
-                        secure_key = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(16))
-                        if not NFCCard.objects.filter(secure_key=secure_key).exists():
-                            card.secure_key = secure_key
-                            break
-                card.save()
-                transaction = Transaction.objects.create(
-                    card=card,
-                    card_identifier=card.card_id,
-                    amount=initial_balance,
-                    payment_method=payment_method,
-                    previous_balance=0,
-                    new_balance=initial_balance,
-                    status='completed',
-                    notes='Card issuance transaction'
-                )
-                if request.user.is_authenticated:
-                    transaction.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        transaction.outlet = request.user.outlet
-                    transaction.save()
-                action_description = f"Card issued to {customer.name} with initial balance {initial_balance} (Payment: {payment_method})"
-            elif action == 'top_up':
-                amount = data.get('amount', 0)
-                payment_method = data.get('payment_method', 'cash')
-                current_balance = float(card.balance)
-                new_balance = current_balance + float(amount)
-                card.balance = new_balance
-                card.save()
-                transaction = Transaction.objects.create(
-                    card=card,
-                    card_identifier=card.card_id,
-                    amount=amount,
-                    payment_method=payment_method,
-                    previous_balance=current_balance,
-                    new_balance=new_balance,
-                    status='completed',
-                    notes='Top-up transaction'
-                )
-                if request.user.is_authenticated:
-                    transaction.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        transaction.outlet = request.user.outlet
-                    transaction.save()
-                action_description = f"Top-up of {amount} added to card (Payment: {payment_method})"
-            elif action == 'balance_inquiry':
-                action_description = f"Balance inquiry: Current balance is {card.balance}"
-            
-            if action == 'payment':
-                amount = Decimal(data.get('amount', 0))
-                notes = data.get('notes', '')
-                
-                # Enforce that user is an outlet or outlet volunteer for payment
-                if not (request.user.is_authenticated and (hasattr(request.user, 'outlet') or (hasattr(request.user, 'profile') and request.user.profile.user_type == 'outlet_volunteer'))):
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Only outlet users or outlet volunteers can perform payments.'
-                    }, status=403)
-                
-                # Check if card is active
-                if not card.is_active:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'This card is inactive and cannot be used for payment.'
-                    }, status=400)
-                
-                # Check if card has sufficient balance
-                if card.balance < amount:
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': 'Insufficient balance',
-                        'balance': float(card.balance),
-                        'amount': float(amount)
-                    }, status=400)
-                
-                # Create transaction record with enforced payment_method='nfc'
-                transaction = Transaction(
-                    card=card,
-                    card_identifier=card.card_id,
-                    amount=amount,
-                    payment_method='nfc',  # Enforced NFC for outlet payments
-                    notes=notes
-                )
-                
-                # If user is authenticated, add user and outlet info
-                if request.user.is_authenticated:
-                    transaction.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        transaction.outlet = request.user.outlet
-                
-                # For AJAX requests from JavaScript, try to get the user from the session
-                elif 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
-                    # Get the session key from the request
-                    session_key = request.COOKIES.get('sessionid')
-                    if session_key:
-                        from django.contrib.sessions.models import Session
-                        from django.contrib.auth.models import User
-                        try:
-                            # Get the session
-                            session = Session.objects.get(session_key=session_key)
-                            # Get the user_id from the session
-                            user_id = session.get_decoded().get('_auth_user_id')
-                            if user_id:
-                                # Get the user
-                                user = User.objects.get(pk=user_id)
-                                transaction.user = user
-                                # If the user has an outlet, add it to the transaction
-                                if hasattr(user, 'outlet'):
-                                    transaction.outlet = user.outlet
-                        except (Session.DoesNotExist, User.DoesNotExist):
-                            pass
-                
-                # Store the previous balance
-                previous_balance = card.balance
-                
-                # Save transaction (this will update card balance in the save method)
-                transaction.save()
-                
-                # Ensure the status is set to completed and save again
-                transaction.status = 'completed'
-                transaction.save()
-                
-                # Verify the balance was updated correctly
-                if card.balance != previous_balance - amount:
-                    # If not, update it manually
-                    card.balance = max(Decimal('0.00'), previous_balance - amount)
-                    card.save()
-                    
-                    # Update transaction with correct balances
-                    transaction.previous_balance = previous_balance
-                    transaction.new_balance = card.balance
-                    transaction.save()
-                
-                action_description = f"Payment of {amount} processed. New balance: {card.balance}"
-                
-                # Add transaction info to response
-                response_data = {
-                    'status': 'success',
-                    'card_id': card.card_id,
-                    'secure_key': card.secure_key,
-                    'action': action,
-                    'transaction_id': str(transaction.id),
-                    'amount': float(amount),
-                    'previous_balance': float(transaction.previous_balance),
-                    'new_balance': float(transaction.new_balance),
-                    'timestamp': transaction.timestamp.isoformat()
-                }
-                
-                # Create log entry
-                log = NFCLog.objects.create(
-                    card=card,
-                    card_identifier=card.card_id,
-                    action=action_description,
-                    success=True,
-                    notes=f"Transaction ID: {transaction.id}"
-                )
-                
-                # If user is authenticated, add user and outlet info to log
-                if request.user.is_authenticated:
-                    log.user = request.user
-                    if hasattr(request.user, 'outlet'):
-                        log.outlet = request.user.outlet
-                    log.save()
-                
-                response_data['log_id'] = str(log.id)
-                
-                return JsonResponse(response_data)
-            
-            else:
-                action_description = action
-            
-            # Create log entry (for non-payment actions)
-            log = NFCLog.objects.create(
-                card=card,
-                card_identifier=card_id or card.card_id,  # Use card.card_id as fallback if card_id is None
-                action=action_description,
-                success=True
+            action = data.get('action')
+            card_data = data.get('card_data', {})
+            serial_number = card_data.get('serial_number')
+            additional_data = data.get('additional_data', {})
+
+            if not serial_number:
+                return JsonResponse({'success': False, 'error': 'Card serial number is required.'})
+
+            # Log the NFC interaction
+            NFCLog.objects.create(
+                serial_number=serial_number,
+                action=action,
+                user=request.user if request.user.is_authenticated else None
             )
-            
-            # If user is authenticated, add user and outlet info
-            if request.user.is_authenticated:
-                log.user = request.user
-                if hasattr(request.user, 'outlet'):
-                    log.outlet = request.user.outlet
-                log.save()
-            
-            response_data = {
-                'status': 'success',
-                'card_id': card.card_id,
-                'secure_key': card.secure_key,
-                'action': action,
-                'card_registered': not created,
-                'log_id': str(log.id)
-            }
-            
-            # Add balance to response for balance inquiry
-            if action == 'balance_inquiry':
-                response_data['balance'] = float(card.balance)
-                if card.customer:
-                    response_data['customer_name'] = card.customer.name
-                    response_data['mobile_number'] = card.customer.mobile_no
-                else:
-                    response_data['customer_name'] = None
-                    response_data['mobile_number'] = None
-                
-                # Add transactions related to this card: amount, timestamp, outlet name
-                transactions = Transaction.objects.filter(card=card).order_by('-timestamp')[:10]
-                transaction_list = []
-                for txn in transactions:
-                    transaction_list.append({
-                        'amount': float(txn.amount),
-                        'timestamp': txn.timestamp.isoformat() if txn.timestamp else None,
-                        'outlet_name': txn.outlet.outlet_name if txn.outlet else None
-                    })
-                response_data['transactions'] = transaction_list
-            
-            return JsonResponse(response_data)
-            
+
+            if action == 'issue_card':
+                customer_id = additional_data.get('customer_id')
+                if not customer_id:
+                    return JsonResponse({'success': False, 'error': 'Customer ID is required.'})
+
+                try:
+                    customer = Customer.objects.get(serial_no=customer_id)
+                except Customer.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Customer not found.'})
+
+                # Check if card already exists
+                if NFCCard.objects.filter(serial_number=serial_number).exists():
+                    return JsonResponse({'success': False, 'error': 'Card is already registered.'})
+
+                # Create a new card
+                with transaction.atomic():
+                    card = NFCCard.objects.create(
+                        serial_number=serial_number,
+                        customer=customer,
+                        issued_by=request.user,
+                        status='active',
+                        balance=0
+                    )
+                    # Create a transaction log for card issuance
+                    Transaction.objects.create(
+                        card=card,
+                        transaction_type='issue',
+                        amount=0,
+                        user=request.user,
+                        status='completed',
+                        payment_method='na'
+                    )
+                return JsonResponse({'success': True, 'message': f'Card {serial_number} issued to {customer.name}.'})
+
+            elif action == 'top_up':
+                amount = additional_data.get('amount')
+                payment_method = additional_data.get('payment_method', 'cash') # default to cash
+                if not amount:
+                    return JsonResponse({'success': False, 'error': 'Amount is required for top-up.'})
+
+                try:
+                    card = NFCCard.objects.get(serial_number=serial_number)
+                    if card.status != 'active':
+                        return JsonResponse({'success': False, 'error': 'Card is not active.'})
+                    
+                    with transaction.atomic():
+                        card.balance += Decimal(amount)
+                        card.save()
+                        
+                        Transaction.objects.create(
+                            card=card,
+                            transaction_type='topup',
+                            amount=amount,
+                            user=request.user,
+                            status='completed',
+                            payment_method=payment_method
+                        )
+                    
+                    return JsonResponse({'success': True, 'message': f'Top-up of {amount} successful. New balance is {card.balance}.', 'new_balance': card.balance})
+                except NFCCard.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Card not found.'})
+
+            elif action == 'balance_inquiry':
+                try:
+                    card = NFCCard.objects.get(serial_number=serial_number)
+                    return JsonResponse({'success': True, 'balance': card.balance, 'customer_name': card.customer.name, 'card_status': card.status})
+                except NFCCard.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Card not found.'})
+
+            elif action == 'process_payment':
+                amount = additional_data.get('amount')
+                outlet_id = additional_data.get('outlet_id')
+                if not amount:
+                    return JsonResponse({'success': False, 'error': 'Amount is required for payment.'})
+                if not outlet_id:
+                     return JsonResponse({'success': False, 'error': 'Outlet information is missing.'})
+
+                try:
+                    card = NFCCard.objects.get(serial_number=serial_number)
+                    outlet = Outlet.objects.get(id=outlet_id)
+
+                    if card.status != 'active':
+                        return JsonResponse({'success': False, 'error': 'Card is not active.'})
+                    
+                    if card.balance < Decimal(amount):
+                        return JsonResponse({'success': False, 'error': 'Insufficient balance.'})
+
+                    with transaction.atomic():
+                        card.balance -= Decimal(amount)
+                        card.save()
+
+                        Transaction.objects.create(
+                            card=card,
+                            transaction_type='payment',
+                            amount=amount,
+                            outlet=outlet,
+                            user=request.user, # volunteer who is processing
+                            status='completed',
+                            payment_method='nfc_card'
+                        )
+                    
+                    return JsonResponse({'success': True, 'message': f'Payment of {amount} successful. New balance is {card.balance}.', 'new_balance': card.balance})
+                except NFCCard.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Card not found.'})
+                except Outlet.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Outlet not found.'})
+
+            else:
+                return JsonResponse({'success': False, 'error': 'Invalid action.'})
+
         except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+            return JsonResponse({'success': False, 'error': 'Invalid JSON.'})
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
-    # Handle GET request - return basic info
-    return JsonResponse({
-        'status': 'ready',
-        'message': 'NFC API is ready. Send POST requests with card_id and action.'
-    })
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 def generate_customer_qr(request, customer_id):
     """Generate a QR code for a customer ID"""

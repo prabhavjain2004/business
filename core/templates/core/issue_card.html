@@ -16,11 +16,11 @@
                         <p class="text-lg text-center mb-4">Scan the customer's QR code or enter Customer ID</p>
                         <div class="flex flex-col items-center mb-4 gap-4">
                             <button id="scan-qr-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">Scan QR Code</button>
-                            <div id="qr-reader" class="w-full max-w-xs hidden"></div>
-                            <div class="w-full flex items-center gap-2">
-                                <input type="text" id="manual-customer-id" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter Serial No. (Code)">
-                                <button id="fetch-customer-btn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">Fetch</button>
-                            </div>
+                            <div id="qr-reader" class="w-full" style="width: 300px;"></div>
+                        </div>
+                        <div class="flex flex-col items-center mb-4 gap-2">
+                            <input type="text" id="manual-customer-id" placeholder="Enter Customer ID" class="border p-2 rounded-lg w-full max-w-sm">
+                            <button id="fetch-customer-btn" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">Fetch Customer</button>
                         </div>
                         <div id="customer-info" class="hidden bg-gray-100 p-4 rounded-lg mb-4">
                             <p><strong>Name:</strong> <span id="customer-name"></span></p>
@@ -35,10 +35,29 @@
                         <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 2: Scan Card</h2>
                         <p class="text-lg text-center mb-4">Please tap an NFC card to begin</p>
                         <div class="flex justify-center mb-4">
-                            <div class="animate-pulse bg-blue-100 rounded-full p-8">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                </svg>
-                            </div>
+                            <svg class="animate-pulse h-16 w-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p id="card-scan-status" class="text-center"></p>
+                    </div>
+                    <!-- Step 3: Confirm Card -->
+                    <div id="step-3" class="step-container hidden">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Step 3: Confirm Card</h2>
+                        <p class="text-lg text-center mb-4">Tap the same card again to confirm.</p>
+                        <div class="flex justify-center mb-4">
+                             <svg class="animate-pulse h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p id="card-confirm-status" class="text-center"></p>
+                    </div>
+                    <!-- Step 4: Result -->
+                    <div id="step-4" class="step-container hidden">
+                        <h2 class="text-xl font-semibold text-blue-600 mb-4">Issuing Result</h2>
+                        <div id="issue-result" class="text-center"></div>
+                        <div class="text-center mt-4">
+                            <a href="{% url 'issue_card' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Issue Another Card</a>
                         </div>
                     </div>
                 </div>
@@ -50,6 +69,7 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="{% static 'core/js/nfc.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const scanQrBtn = document.getElementById('scan-qr-btn');
@@ -62,11 +82,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const customerEmail = document.getElementById('customer-email');
     const customerError = document.getElementById('customer-error');
     const proceedToCardBtn = document.getElementById('proceed-to-card-btn');
+    
     const step1 = document.getElementById('step-1');
     const step2 = document.getElementById('step-2');
+    const step3 = document.getElementById('step-3');
+    const step4 = document.getElementById('step-4');
+    
+    const cardScanStatus = document.getElementById('card-scan-status');
+    const cardConfirmStatus = document.getElementById('card-confirm-status');
+    const issueResult = document.getElementById('issue-result');
 
     let identifiedCustomerId = null;
     let html5QrCode = null;
+    let firstScannedCardSerial = null;
+    let nfcReader = null;
 
     function showCustomerInfo(data) {
         customerName.textContent = data.name;
@@ -76,12 +105,14 @@ document.addEventListener('DOMContentLoaded', function() {
         customerError.classList.add('hidden');
         proceedToCardBtn.classList.remove('hidden');
     }
+
     function showCustomerError(msg) {
         customerInfo.classList.add('hidden');
         customerError.textContent = msg;
         customerError.classList.remove('hidden');
         proceedToCardBtn.classList.add('hidden');
     }
+
     function fetchCustomerDetails(customerId) {
         fetch(`/api/get_customer_details/?customer_id=${encodeURIComponent(customerId)}`)
             .then(res => res.json())
@@ -95,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(() => showCustomerError('Error fetching customer details by Serial No.'));
     }
+
     scanQrBtn.addEventListener('click', function() {
         qrReader.classList.remove('hidden');
         if (!html5QrCode) {
@@ -102,24 +134,98 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         html5QrCode.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: 200 },
+            { fps: 10, qrbox: {width: 250, height: 250} },
             qrCodeMessage => {
-                html5QrCode.stop();
-                qrReader.classList.add('hidden');
-                fetchCustomerDetails(qrCodeMessage);
+                html5QrCode.stop().then(() => {
+                    qrReader.classList.add('hidden');
+                    fetchCustomerDetails(qrCodeMessage);
+                });
             },
             errorMessage => {}
         );
     });
+
     fetchCustomerBtn.addEventListener('click', function() {
         const id = manualCustomerId.value.trim();
         if (id) fetchCustomerDetails(id);
     });
+
     proceedToCardBtn.addEventListener('click', function() {
         step1.classList.add('hidden');
         step2.classList.remove('hidden');
-        // You can pass identifiedCustomerId to the backend as needed
+        startNFCScanForIssue();
     });
+
+    function startNFCScanForIssue() {
+        if (!('NDEFReader' in window)) {
+            showCustomerError("Web NFC is not supported by this browser.");
+            step2.classList.add('hidden');
+            step1.classList.remove('hidden');
+            return;
+        }
+
+        if (nfcReader) {
+            return;
+        }
+
+        nfcReader = new NDEFReader();
+        nfcReader.scan().then(() => {
+            cardScanStatus.textContent = 'Ready to scan...';
+            nfcReader.onreading = event => {
+                handleNFCTap(event.serialNumber);
+            };
+            nfcReader.onreadingerror = event => {
+                cardScanStatus.textContent = "Error reading NFC card.";
+            };
+        }).catch(error => {
+            cardScanStatus.textContent = `Error: ${error}`;
+            showCustomerError(`NFC Scan Error: ${error}`);
+            step2.classList.add('hidden');
+            step1.classList.remove('hidden');
+        });
+    }
+
+    function handleNFCTap(serialNumber) {
+        if (!firstScannedCardSerial) {
+            // First tap
+            firstScannedCardSerial = serialNumber;
+            step2.classList.add('hidden');
+            step3.classList.remove('hidden');
+            cardConfirmStatus.textContent = `Card scanned. Tap again to confirm.`;
+        } else {
+            // Second tap
+            if (serialNumber === firstScannedCardSerial) {
+                cardConfirmStatus.textContent = 'Card confirmed. Issuing...';
+                issueCard(serialNumber);
+            } else {
+                cardConfirmStatus.textContent = `Card mismatch. Please tap the first card again.`;
+                firstScannedCardSerial = null; // Reset
+                setTimeout(() => {
+                    step3.classList.add('hidden');
+                    step2.classList.remove('hidden');
+                    cardScanStatus.textContent = 'Ready to scan...';
+                }, 3000);
+            }
+        }
+    }
+
+    async function issueCard(serialNumber) {
+        const cardManager = new NFCCardManager('/api/nfc/');
+        const cardData = { serial_number: serialNumber };
+        const additionalData = { customer_id: identifiedCustomerId };
+
+        const response = await cardManager.sendCardData(cardData, 'issue_card', additionalData);
+
+        step2.classList.add('hidden');
+        step3.classList.add('hidden');
+        step4.classList.remove('hidden');
+
+        if (response.success) {
+            issueResult.innerHTML = `<p class="text-green-600 font-semibold">${response.message}</p>`;
+        } else {
+            issueResult.innerHTML = `<p class="text-red-600 font-semibold">Error: ${response.error}</p>`;
+        }
+    }
 });
 </script>
 {% endblock %}
